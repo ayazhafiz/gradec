@@ -1,17 +1,29 @@
 {
-  "name": "y",
-  "version": "y",
-  "description": "y",
-  "main": "y",
-  "repository": "y",
-  "author": "y",
-  "license": "y",
+  "name": "gradec",
+  "version": "0",
+  "description": "Grade compiler.",
+  "main": "client.js",
+  "repository": "https://github.com/ayazhafiz/gradec",
+  "author": "hafiz [ayaz.hafiz.1@gmail.com]",
+  "license": "MIT",
   "private": true,
+  "scripts": {
+    "build": "yarn tsc",
+    "format": "clang-format -i src/*.ts",
+    "lint": "yarn tslint --project .",
+    "lint:fix": "yarn lint --fix",
+    "test": "yarn jamine dist/**/*.js"
+  },
   "dependencies": {
-    "@types/node": "^12.6.6",
-    "@types/request-promise": "^4.1.44",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
+    "yargs": "^13.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.6.8",
+    "@types/request-promise": "^4.1.44",
+    "@types/yargs": "^13.0.0",
+    "tslint": "^5.18.0",
     "typescript": "^3.5.3"
   }
 }
