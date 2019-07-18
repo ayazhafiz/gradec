@@ -1,13 +1,13 @@
 # gradec
 
 `gradec` accumulates [score comments](#score-comments) on a GitHub commit,
-then pushing a comment with the final score to the ommit.
+then pushing a comment with the final score to the commit.
 `gradec` can also push comments linking to a commit's CI builds.
 
 ## Usage
 
-After cloning the repo, install the project's dependencies and build `gradec`.
 This project uses [yarn](https://yarnpkg.com) as a dependency manager and build runner.
+After cloning the repo, install the project's dependencies and build `gradec`.
 
 ```shell
 yarn install
@@ -27,9 +27,9 @@ as a linter, automated formatter, and test framework, respectively. `tslint` and
 installed separately.
 
 ```shell
+yarn format
 yarn lint
 yarn lint:fix # apply some automated linting fixes
-yarn format
 yarn test
 ```
 
