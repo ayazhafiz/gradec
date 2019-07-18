@@ -20,7 +20,7 @@ function makeRequest({
   const request: any = {
     headers: {
       'Authorization': `token ${accessToken}`,
-      'User-Agent': 'graderc',
+      'User-Agent': 'gradec',
     },
     json: true,
     uri: `https://api.github.com/repos/${repo}/commits/${commit}/comments`,
