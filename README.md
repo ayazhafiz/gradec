@@ -39,6 +39,28 @@ Examples:
   main.js -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
 ```
 
+#### Score comments
+
+`gradec` calculates the grade/score of an assignment by accumulating _score comments_ on a commit.
+Score comments have the (regex) grammar
+
+```typescript
+/([+|-]\d*)(:.*)?/
+```
+
+where only the first capturing group is used in accumultating the total score.
+
+Score comments:
+
+- `+3: nice!` (+3 to score)
+- `-2: consider...` (-2 to score)
+- `-1` (-1 to score)
+
+Not score comments:
+
+- `observation...` (+0 to score)
+- `3` (+0 to score)
+
 #### Partial grading
 
 `gradec` has particular behavior for assignments that are in the process of or
