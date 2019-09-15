@@ -1,8 +1,11 @@
 {
   "name": "gradec",
-  "version": "0",
+  "version": "0.0.0",
   "description": "Grade compiler.",
-  "main": "client.js",
+  "main": "dist/src/main.js",
+  "bin": {
+    "gradec": "dist/src/main.js"
+  },
   "repository": "https://github.com/ayazhafiz/gradec",
   "author": "hafiz [ayaz.hafiz.1@gmail.com]",
   "license": "MIT",
@@ -12,17 +15,23 @@
     "format": "clang-format -i src/*.ts",
     "lint": "yarn tslint --project .",
     "lint:fix": "yarn lint --fix",
-    "test": "yarn jamine dist/**/*.js"
+    "test": "yarn build && yarn jasmine dist/**/*.spec.js",
+    "refresh": "rm -rf node_modules/ && yarn install",
+    "start": "node dist/src/main.js",
+    "install-global": "yarn build && yarn link"
   },
   "dependencies": {
+    "chalk": "^2.4.2",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "yargs": "^13.3.0"
   },
   "devDependencies": {
+    "@types/jasmine": "^3.4.0",
     "@types/node": "^12.6.8",
     "@types/request-promise": "^4.1.44",
     "@types/yargs": "^13.0.0",
+    "jasmine": "^3.4.0",
     "tslint": "^5.18.0",
     "typescript": "^3.5.3"
   }
