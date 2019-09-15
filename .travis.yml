@@ -5,5 +5,11 @@ node_js:
   - 11
   - 12
   - 13
+  - node
+  - lts/*
+matrix:
+  fast_finish: true
+  allow_failures:
+    - node_js: 13
 os: linux
 script: yarn test
