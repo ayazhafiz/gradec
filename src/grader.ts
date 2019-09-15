@@ -77,25 +77,22 @@ async function hasScoreComment(options: api.RequestMetadata): Promise<boolean> {
 }
 
 /**
- * Reads comment of form
- *   $SCORE:$EXTRA_COMMENT
- * applied to files on the commit and accumulates discovered $SCORES on
- * MAX_SCORE. Returns the total determined score.
+ * Reads comments of form
+ *   ([+|-]\d*)(:.*)?
+ *   ^^^^^^^^^^------- $SCORE
+ *             ^^^^^-- $COMMENT
+ * on the commit and accumulates discovered $SCORES on
+ * MAX_SCORE. Returns the total calculated score.
  */
 async function scoreComments(options: api.RequestMetadata): Promise<number> {
+  const SCORE_COMMENT_GRAMMAR = /([+|-]\d*)(:.*)?/;
   const comments: api.CommitCommentsResponse[] =
       await rp.get(makeRequest(options)).catch(Grader.onError);
 
-  // Extract all file comments on the commit, and if a comment is of form
-  //   $SCORE:$EXTRA_COMMENT
-  // grab $SCORE and attempt to parse it as an integer score.
   const partialScores = comments.reduce((res, comment) => {
-    if (comment.path) {
-      const scoreStr = comment.body.split(':')[0].trim();
-      const scoreNum = Number(scoreStr);
-      if (scoreStr.length && Number.isInteger(scoreNum)) {
-        res.push(scoreNum);
-      }
+    const match = comment.body.match(SCORE_COMMENT_GRAMMAR);
+    if (match) {
+      res.push(Number(match[1]));
     }
     return res;
   }, Array.from<number>({length: 0}));
