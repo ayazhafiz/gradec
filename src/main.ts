@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+import chalk from 'chalk';
+import * as open from 'open';
 import * as readline from 'readline';
 import * as yargs from 'yargs';
 import * as api from './api';
-import chalk from 'chalk';
-import * as open from 'open';
 import {GradecServer} from './server';
 
 interface GradecArgs {
@@ -16,7 +16,7 @@ interface GradecArgs {
     start: number,
     end: number,
   };
-  openIn: string|undefined,
+  openIn: string|undefined;
 }
 
 function getArgv(): GradecArgs {
@@ -126,8 +126,8 @@ async function negativeResponse(
 async function maybeAutoOpen(link: string, app: string|undefined) {
   if (app) {
     open(link, {
-      wait: false,
       app,
+      wait: false,
     });
   }
 }
