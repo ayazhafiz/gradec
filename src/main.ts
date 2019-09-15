@@ -7,7 +7,13 @@ import * as yargs from 'yargs';
 import * as api from './api';
 import {GradecServer} from './server';
 
+enum GradecCommand {
+  Grade = 'grade',
+}
+
 interface GradecArgs {
+  accessToken: string;
+  command: GradecCommand;
   files: {
     commits: string,
     tests: string,
@@ -19,15 +25,19 @@ interface GradecArgs {
   openIn: string|undefined;
 }
 
-function getArgv(): GradecArgs {
+function getArgv() {
+  const TOKEN_ENV = 'GRADEC_ACCESS_TOKEN';
+  const accessToken = process.env[TOKEN_ENV];
+  if (!accessToken) {
+    console.error(`Expected the \`${
+        TOKEN_ENV}' environment variable to be present, but it wasn't found.`);
+    console.error(`See the \`gradec' README for more details.`);
+    return process.exit(1);
+  }
+
   const argv =
-      yargs.usage('Usage: $0 [options]')
-          .example(
-              '$0 -c commits.txt -t travis.txt -r 1 20',
-              'grade lines 1-20 in `commits.txt\' and `travis.txt\'')
-          .example(
-              '$0 -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"',
-              'grade lines 5-10 in `c.txt\' and `t.txt\', auto-opening links in Google Chrome')
+      yargs.usage('Usage: $0 <command> <options>')
+          .command('grade', 'perform assignment grading')
           .options({
             ao: {
               alias: 'auto-open',
@@ -57,14 +67,29 @@ function getArgv(): GradecArgs {
               type: 'string',
             },
           })
+          .example(
+              '$0 grade -c commits.txt -t travis.txt -r 1 20',
+              'grade lines 1-20 in `commits.txt\' and `travis.txt\'')
+          .example(
+              '$0 -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"',
+              'grade lines 5-10 in `c.txt\' and `t.txt\', auto-opening links in Google Chrome')
           .help('h')
           .alias('h', 'help')
           .wrap(yargs.terminalWidth())
           .argv;
 
-  const {ao, c: commits, t: tests, r: range} = argv;
+  const {ao, c: commits, t: tests, r: range, _: commands} = argv;
+
+  let command: GradecCommand =
+      GradecCommand[commands[0] as keyof typeof GradecCommand];
+  if (commands.length === 0 || !command) {
+    command = GradecCommand.Grade;
+  }
+
   const [start, end] = range.map(Number);
   const gradecArgs: GradecArgs = {
+    accessToken,
+    command,
     bounds: {start: start - 1, end: end - 1},
     files: {commits, tests},
     openIn: ao,
@@ -132,24 +157,14 @@ async function maybeAutoOpen(link: string, app: string|undefined) {
   }
 }
 
-async function main(): Promise<number> {
-  const TOKEN_ENV = 'GRADEC_ACCESS_TOKEN';
-  const accessToken = process.env[TOKEN_ENV];
-  if (!accessToken) {
-    console.error(`Expected the \`${
-        TOKEN_ENV}' environment variable to be present, but it wasn't found.`);
-    console.error(`See the \`gradec' README for more details.`);
-    return 1;
-  }
-  const argv = getArgv();
+async function grade(argv: GradecArgs) {
   const {openIn} = argv;
 
+  console.error(Message.Welcome);
+  console.error(Message.CreateGrader);
+
   const server = new GradecServer(argv.files, argv.bounds);
-
-  console.log(Message.Welcome);
-  console.log(Message.CreateGrader);
-
-  const grader = await server.makeGrader(accessToken);
+  const grader = await server.makeGrader(argv.accessToken);
 
   for await (const handle of grader) {
     const {position, commitUrl, calculateAndPostGrade} = handle;
@@ -161,8 +176,8 @@ async function main(): Promise<number> {
 
     // Provide user with next assignment. Open a browser window to the
     // assignment if the user has asked for auto-opened links.
-    console.log(Message.AssignmentPosition(position.at, position.total));
-    console.log(Message.LinkToAssignment(commitUrl));
+    console.error(Message.AssignmentPosition(position.at, position.total));
+    console.error(Message.LinkToAssignment(commitUrl));
     await maybeAutoOpen(commitUrl, openIn);
 
     // Wait until user is done grading the commit. If they bail before finishing
@@ -174,14 +189,23 @@ async function main(): Promise<number> {
     // Provide user with calculated assignment grade. Open a browser window to
     // the score comment if the user has asked for auto-opened links.
     const gradeResult = await calculateAndPostGrade();
-    console.log(Message.CalculatedGrade(gradeResult));
+    console.error(Message.CalculatedGrade(gradeResult));
     await maybeAutoOpen(gradeResult.url, openIn);
   }
-  console.log(Message.Exit);
+  console.error(Message.Exit);
 
+  process.exit(0);
+}
+
+async function main(): Promise<number> {
+  const argv = await getArgv();
+  switch (argv.command) {
+    case GradecCommand.Grade:
+      grade(argv);
+  }
   return 0;
 }
 
 if (require.main === module) {
-  main().then((ec) => process.exitCode = ec);
+  main().then(ec => process.exitCode = ec);
 }

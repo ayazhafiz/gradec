@@ -26,6 +26,9 @@ repeating this for every shell instance.
 ```
 Usage: gradec [options]
 
+Commands:
+  gradec grade  perform assignment grading  [default]
+
 Options:
   --version          Show version number                              [boolean]
   --ao, --auto-open  Automatically opens links in a browser           [string] [default: "Safari"]
@@ -35,7 +38,7 @@ Options:
   -h, --help         Show help                                        [boolean]
 
 Examples:
-  main.js -c commits.txt -t travis.txt -r 1 20           grade lines 1-20 in `commits.txt' and `travis.txt'
+  main.js grade -c commits.txt -t travis.txt -r 1 20     grade lines 1-20 in `commits.txt' and `travis.txt'
   main.js -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
 ```
 
