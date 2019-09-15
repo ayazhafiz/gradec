@@ -1,9 +1,17 @@
 language: node_js
 
-node_js:
-  - 10
-  - 11
-  - 12
-  - 13
+# Tests must be run sequentially to not interefere with GH API requests.
+jobs:
+  include:
+    - stage: 10
+      node_js: 10
+    - stage: 11
+      node_js: 11
+    - stage: 12
+      node_js: 12
+    - stage: node
+      node_js: node
+    - stage: lts
+      node_js: lts/*
 os: linux
 script: yarn test

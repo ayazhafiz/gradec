@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
+import chalk from 'chalk';
+import * as open from 'open';
 import * as readline from 'readline';
 import * as yargs from 'yargs';
 import * as api from './api';
-import chalk from 'chalk';
 import {GradecServer} from './server';
 
 interface GradecArgs {
@@ -15,6 +16,7 @@ interface GradecArgs {
     start: number,
     end: number,
   };
+  openIn: string|undefined;
 }
 
 function getArgv(): GradecArgs {
@@ -23,17 +25,27 @@ function getArgv(): GradecArgs {
           .example(
               '$0 -c commits.txt -t travis.txt -r 1 20',
               'grade lines 1-20 in `commits.txt\' and `travis.txt\'')
+          .example(
+              '$0 -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"',
+              'grade lines 5-10 in `c.txt\' and `t.txt\', auto-opening links in Google Chrome')
           .options({
+            ao: {
+              alias: 'auto-open',
+              default: 'Safari',
+              describe: 'Automatically opens links in a browser',
+              type: 'string',
+            },
             c: {
               alias: 'commits',
               demandOption: true,
               describe: '(GitHub) commits to grade',
+              requiresArg: true,
               type: 'string',
             },
             r: {
               alias: 'range',
               demandOption: true,
-              describe: 'space-separated range of line numbers to grade',
+              describe: 'Space-separated range of line numbers to grade',
               nargs: 2,
               type: 'array',
             },
@@ -41,18 +53,21 @@ function getArgv(): GradecArgs {
               alias: 'tests',
               demandOption: true,
               describe: 'CI tests to grade',
+              requiresArg: true,
               type: 'string',
             },
           })
           .help('h')
           .alias('h', 'help')
+          .wrap(yargs.terminalWidth())
           .argv;
 
-  const {c: commits, t: tests, r: range} = argv;
+  const {ao, c: commits, t: tests, r: range} = argv;
   const [start, end] = range.map(Number);
   const gradecArgs: GradecArgs = {
     bounds: {start: start - 1, end: end - 1},
     files: {commits, tests},
+    openIn: ao,
   };
 
   return gradecArgs;
@@ -108,6 +123,15 @@ async function negativeResponse(
   return resp === to.naffirm;
 }
 
+async function maybeAutoOpen(link: string, app: string|undefined) {
+  if (app) {
+    open(link, {
+      app,
+      wait: false,
+    });
+  }
+}
+
 async function main(): Promise<number> {
   const TOKEN_ENV = 'GRADEC_ACCESS_TOKEN';
   const accessToken = process.env[TOKEN_ENV];
@@ -118,6 +142,7 @@ async function main(): Promise<number> {
     return 1;
   }
   const argv = getArgv();
+  const {openIn} = argv;
 
   const server = new GradecServer(argv.files, argv.bounds);
 
@@ -129,18 +154,28 @@ async function main(): Promise<number> {
   for await (const handle of grader) {
     const {position, commitUrl, calculateAndPostGrade} = handle;
 
+    // Ask user if they'd like to grade the next assignment.
     if (await negativeResponse(Message.NextAssignment)) {
       break;
     }
 
+    // Provide user with next assignment. Open a browser window to the
+    // assignment if the user has asked for auto-opened links.
     console.log(Message.AssignmentPosition(position.at, position.total));
     console.log(Message.LinkToAssignment(commitUrl));
+    await maybeAutoOpen(commitUrl, openIn);
+
+    // Wait until user is done grading the commit. If they bail before finishing
+    // grading, `gradec` is done.
     if (await negativeResponse(Message.TypeWhenDone)) {
       break;
     }
 
+    // Provide user with calculated assignment grade. Open a browser window to
+    // the score comment if the user has asked for auto-opened links.
     const gradeResult = await calculateAndPostGrade();
     console.log(Message.CalculatedGrade(gradeResult));
+    await maybeAutoOpen(gradeResult.url, openIn);
   }
   console.log(Message.Exit);
 

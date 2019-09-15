@@ -27,15 +27,19 @@ repeating this for every shell instance.
 Usage: gradec [options]
 
 Options:
-  --version      Show version number                              [boolean]
-  -c, --commits  (GitHub) commits to grade                        [string] [required]
-  -t, --tests    CI tests to grade                                [string] [required]
-  -r, --range    space-separated range of line numbers to grade   [array] [required]
-  -h, --help     Show help                                        [boolean]
+  --version          Show version number                              [boolean]
+  --ao, --auto-open  Automatically opens links in a browser           [string] [default: "Safari"]
+  -c, --commits      (GitHub) commits to grade                        [string] [required]
+  -t, --tests        CI tests to grade                                [string] [required]
+  -r, --range        Space-separated range of line numbers to grade   [array] [required]
+  -h, --help         Show help                                        [boolean]
 
 Examples:
-  gradec -c commits.txt -t travis.txt -r 1 20    grade lines 1-20 using `commits.txt' and `travis.txt'
+  main.js -c commits.txt -t travis.txt -r 1 20           grade lines 1-20 in `commits.txt' and `travis.txt'
+  main.js -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
 ```
+
+#### Partial grading
 
 `gradec` has particular behavior for assignments that are in the process of or
 have been graded:
