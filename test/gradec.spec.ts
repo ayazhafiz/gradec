@@ -1,8 +1,8 @@
-import * as fs from 'fs';
 import 'jasmine';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as rp from 'request-promise';
-import {Grader} from '../src/grader';
+import {Grader, SCORE_PREFIX, TESTS_PREFIX} from '../src/grader';
 import {GradecServer} from '../src/server';
 
 const COMMITS_FILE = path.resolve('test/commits.txt');
@@ -31,8 +31,8 @@ async function clean() {
 
     const allComments = await rp.get({...request, uri: commitCommentsUrl});
     const applicable = allComments.filter(
-        (comment: {body: string}) => comment.body.startsWith('Score: ') ||
-            comment.body.startsWith('CI tests at '));
+        (comment: {body: string}) => comment.body.startsWith(SCORE_PREFIX) ||
+            comment.body.startsWith(TESTS_PREFIX));
 
     for (const comment of applicable) {
       // tslint:disable-next-line:no-empty
