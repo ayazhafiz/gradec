@@ -3,6 +3,7 @@ import * as util from 'util';
 import * as api from './api';
 import {getScoreComments, Grader, makeCommitRequestMetadata} from './grader';
 
+/** Describes a "<author> <url>" line listing. */
 interface AuthorListing {
   readonly author: string;
   readonly url: string;
@@ -12,14 +13,16 @@ interface AuthorListing {
  * used by gradec.
  */
 class GradecFs {
+  /** Listing of all commit URLs recovered from the file system. */
   public readonly commits: ReadonlyArray<AuthorListing>;
+  /** Listing of all test URLs recovered from the file system. */
   public readonly tests: ReadonlyArray<AuthorListing>;
 
   constructor(commitsFile: string, testsFile: string) {
     function split(file: string) {
       return fs.readFileSync(file, 'utf8')
           .split(/\r?\n/)
-          .filter((line) => line.length)
+          .filter((line) => line.length)  // discard empty lines
           .map((line) => {
             // A line in the file should look like
             //   "<author> <url>"
@@ -34,18 +37,35 @@ class GradecFs {
 }
 
 /**
- * Provides a API for client usage of gradec, e.g. on a console.
+ * Provides an encapsulation of gradec that can be queried by a client, e.g. for
+ * usage on a CLI.
  */
 export class GradecServer {
+  /**
+   * Common handle for handling failed Grader requests. See `Grader#onError` for
+   * more details.
+   */
   private static handleFailedRequest(err: api.CommitCommentsError): number {
     console.error(`Failed to process request\n${util.inspect(err.options)}`);
     console.error(`Dumping request error message and exiting.\n`);
     console.error(util.inspect(err.message));
     return 1;
   }
+  /** Gradec filesystem. */
   private readonly fs: GradecFs;
+  /**
+   * Metadata about all the commits the server has extracted from the
+   * filesystem.
+   */
   private readonly commitMetas: api.CommitMetadata[] = [];
 
+  /**
+   * Creates a new GradecServer.
+   *
+   * @param files commit and test URLs files to grade.
+   * @param bounds starting and stopping lines of the commit and test files to
+   *     grade.
+   */
   constructor(
       files: {commits: string, tests: string},
       private readonly bounds: {readonly start: number, readonly end: number}) {
@@ -53,6 +73,7 @@ export class GradecServer {
     const {commits, tests} = this.fs;
 
     this.commitMetas = commits.map((record, idx) => {
+      // TODO: consider supporting non-GitHub (GitLab?) URLs.
       const match = record.url.match(/.*github.com\/(.*)\/commit\/(.*)/)!;
       if (!match) {
         throw new Error(`Expected ${record.url} to be a GitHub url.`);
@@ -73,6 +94,9 @@ export class GradecServer {
   /**
    * Creates and returns a Grader for the collection of commits the server knows
    * about.
+   *
+   * @param accessToken GitHub access token for Grader to use
+   * @return promise containing created grader
    */
   public async makeGrader(accessToken: string): Promise<Grader> {
     return Grader.makeGrader(
@@ -80,18 +104,33 @@ export class GradecServer {
         GradecServer.handleFailedRequest);
   }
 
+  /**
+   * Gets information about any already-known final scores in the assignments
+   * the server has been created for.
+   *
+   * @param accessToken GitHub access token to use in querying for commits
+   * @return promise containing array of commit authors and their known score,
+   *     if any.
+   */
   public async getGradeStatus(accessToken: string):
       Promise<ReadonlyArray<{author: string, score: number|undefined}>> {
     const commits =
         this.commitMetas.slice(this.bounds.start, this.bounds.end + 1);
+
+    // Map comments to their scores, only if the score actually exists;
+    // otherwise, keep the score as `undefined`.
     const scores = await Promise.all(commits.map((commit) => {
       const meta = makeCommitRequestMetadata(accessToken, commit);
-      return getScoreComments(meta).then((comments) => comments.find((c) => !!c));
+      return getScoreComments(meta).then(
+          (comments) => comments.find((c) => !!c));
     }));
 
+    // Map each score (known or unknown) to the author of the commit the score
+    // is for.
     return scores.map((score, index) => {
       return {
-        author: this.commitMetas[index].author, score,
+        author: this.commitMetas[index].author,
+        score,
       };
     });
   }
