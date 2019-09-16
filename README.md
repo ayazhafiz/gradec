@@ -27,7 +27,8 @@ repeating this for every shell instance.
 Usage: gradec [options]
 
 Commands:
-  gradec grade  perform assignment grading  [default]
+  gradec grade  perform assignment grading    [default]
+  gradec list   list assignment grade status
 
 Options:
   --version          Show version number                              [boolean]
@@ -38,8 +39,10 @@ Options:
   -h, --help         Show help                                        [boolean]
 
 Examples:
-  main.js grade -c commits.txt -t travis.txt -r 1 20     grade lines 1-20 in `commits.txt' and `travis.txt'
-  main.js -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
+  gradec grade -c commits.txt -t travis.txt -r 1 20     grade lines 1-20 in `commits.txt' and `travis.txt'
+  gradec -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
+  gradec list -c c.txt -t t.xt -r 5 10                  list grading status of lines 5-10 in `c.txt' and `t.txt'
+  gradec list -c c.txt -t t.xt -r 5 10 > grades.txt     write any known grades for assignments on lines 5-10 to `grades.txt'
 ```
 
 #### Score comments

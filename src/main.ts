@@ -8,7 +8,8 @@ import * as api from './api';
 import {GradecServer} from './server';
 
 enum GradecCommand {
-  Grade = 'grade',
+  grade = 'grade',
+  list = 'list',
 }
 
 interface GradecArgs {
@@ -38,6 +39,7 @@ function getArgv() {
   const argv =
       yargs.usage('Usage: $0 <command> <options>')
           .command('grade', 'perform assignment grading')
+          .command('list', 'list assignment grade status')
           .options({
             ao: {
               alias: 'auto-open',
@@ -73,6 +75,12 @@ function getArgv() {
           .example(
               '$0 -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"',
               'grade lines 5-10 in `c.txt\' and `t.txt\', auto-opening links in Google Chrome')
+          .example(
+              '$0 list -c c.txt -t t.xt -r 5 10',
+              'list grading status of lines 5-10 in `c.txt\' and `t.txt\'')
+          .example(
+              '$0 list -c c.txt -t t.xt -r 5 10 > grades.txt',
+              'write any known grades for assignments on lines 5-10 to `grades.txt\'')
           .help('h')
           .alias('h', 'help')
           .wrap(yargs.terminalWidth())
@@ -83,14 +91,14 @@ function getArgv() {
   let command: GradecCommand =
       GradecCommand[commands[0] as keyof typeof GradecCommand];
   if (commands.length === 0 || !command) {
-    command = GradecCommand.Grade;
+    command = GradecCommand.grade;
   }
 
   const [start, end] = range.map(Number);
   const gradecArgs: GradecArgs = {
     accessToken,
-    command,
     bounds: {start: start - 1, end: end - 1},
+    command,
     files: {commits, tests},
     openIn: ao,
   };
@@ -157,7 +165,7 @@ async function maybeAutoOpen(link: string, app: string|undefined) {
   }
 }
 
-async function grade(argv: GradecArgs) {
+async function grade(argv: GradecArgs): Promise<number> {
   const {openIn} = argv;
 
   console.error(Message.Welcome);
@@ -194,18 +202,41 @@ async function grade(argv: GradecArgs) {
   }
   console.error(Message.Exit);
 
-  process.exit(0);
+  return 0;
+}
+
+async function list(argv: GradecArgs): Promise<number> {
+  const server = new GradecServer(argv.files, argv.bounds);
+  const status = await server.getGradeStatus(argv.accessToken);
+  const size = status.length;
+
+  const ungraded = status.filter(comment => !comment.score);
+  const graded = status.filter(comment => !!comment.score);
+
+  console.error(
+      `${chalk.red(`${ungraded.length}/${size}`)}\tassignments still ungraded`);
+  console.error(
+      `${chalk.green(`${graded.length}/${size}`)}\tassignments graded`);
+  console.error(
+      chalk.inverse(`Printing graded assignments and scores to STDOUT:\n`));
+
+  for (const {author, score} of graded) {
+    console.log(`${author}\t${score}`);
+  }
+
+  return 0;
 }
 
 async function main(): Promise<number> {
   const argv = await getArgv();
   switch (argv.command) {
-    case GradecCommand.Grade:
-      grade(argv);
+    case GradecCommand.grade:
+      return grade(argv);
+    case GradecCommand.list:
+      return list(argv);
   }
-  return 0;
 }
 
 if (require.main === module) {
-  main().then(ec => process.exitCode = ec);
+  main().then((ec) => process.exitCode = ec);
 }
