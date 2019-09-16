@@ -2,10 +2,10 @@ import * as rp from 'request-promise';
 import * as api from './api';
 
 const MAXSCORE: number = Number(process.env.MAXSCORE || 100);
-const SCORE_PREFIX = 'Score:';
-const TESTS_PREFIX = 'CI tests at';
+export const SCORE_PREFIX = 'Score:';
+export const TESTS_PREFIX = 'CI tests at';
 
-function makeRequest({
+export function makeRequest({
   accessToken,
   repo,
   commit,
@@ -33,7 +33,7 @@ function makeRequest({
 /**
  * Creates metadata for a request to be made about a commit.
  */
-function makeCommitRequestMetadata(
+export function makeCommitRequestMetadata(
     accessToken: string, commitMeta: api.CommitMetadata): api.RequestMetadata {
   const {commit, repo} = commitMeta;
   return {
@@ -46,7 +46,7 @@ function makeCommitRequestMetadata(
 /**
  * Gets all the comments on a particular commit.
  */
-async function getComments(options: api.RequestMetadata):
+export async function getComments(options: api.RequestMetadata):
     Promise<api.CommitCommentsResponse[]> {
   return rp.get(makeRequest(options)).catch(Grader.onError);
 }
@@ -66,14 +66,22 @@ async function postComment(
  * Returns whether or not a commit already has a score comment. If it
  * does, it probably should not be considered for grading.
  */
-async function hasScoreComment(options: api.RequestMetadata): Promise<boolean> {
+export async function getScoreComments(options: api.RequestMetadata):
+    Promise<Array<number|undefined>> {
   return getComments(options).then(
-      (comments) =>
-          comments.find(
-              // Look for any comment that is commit comment (not on any
-              // particular file) and marks the score of the commit.
-              (comment) => !comment.path &&
-                  comment.body.startsWith(SCORE_PREFIX)) !== undefined);
+      (comments) => comments.map(
+          (comment) => !comment.path && comment.body.startsWith(SCORE_PREFIX) ?
+              Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim()) :
+              undefined));
+}
+
+/**
+ * Returns whether or not a commit already has a score comment. If it
+ * does, it probably should not be considered for grading.
+ */
+async function hasScoreComment(options: api.RequestMetadata): Promise<boolean> {
+  return getScoreComments(options).then(
+      (comments) => !!comments.find((comment) => !!comment));
 }
 
 /**

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as util from 'util';
 import * as api from './api';
-import {Grader} from './grader';
+import {getScoreComments, Grader, makeCommitRequestMetadata} from './grader';
 
 interface AuthorListing {
   readonly author: string;
@@ -78,5 +78,21 @@ export class GradecServer {
     return Grader.makeGrader(
         this.commitMetas, this.bounds.start, this.bounds.end, accessToken,
         GradecServer.handleFailedRequest);
+  }
+
+  public async getGradeStatus(accessToken: string):
+      Promise<ReadonlyArray<{author: string, score: number|undefined}>> {
+    const commits =
+        this.commitMetas.slice(this.bounds.start, this.bounds.end + 1);
+    const scores = await Promise.all(commits.map((commit) => {
+      const meta = makeCommitRequestMetadata(accessToken, commit);
+      return getScoreComments(meta).then((comments) => comments.find((c) => !!c));
+    }));
+
+    return scores.map((score, index) => {
+      return {
+        author: this.commitMetas[index].author, score,
+      };
+    });
   }
 }
