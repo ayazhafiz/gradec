@@ -106,9 +106,9 @@ export class GradecServer {
   public async makeGrader(accessToken: string):
       Promise<{grader: Grader, errors: ReadonlyArray<string>}> {
     return {
+      errors: this.errors,
       grader: await Grader.makeGrader(
           this.commitMetas, accessToken, GradecServer.handleFailedRequest),
-      errors: this.errors,
     };
   }
 

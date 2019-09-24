@@ -118,7 +118,7 @@ const Message = {
       chalk.dim(`gradec is initializing. This may take a few seconds...\n`),
   Error: (errors: ReadonlyArray<string>): string =>
       chalk.red(`Encountered the following errors:\n`) +
-      errors.map(error => t(chalk.bold(error))).join('\n'),
+      errors.map((error) => t(chalk.bold(error))).join('\n'),
   Exit: chalk.yellow(`Done. Exiting.`),
   LinkToAssignment: (link: string) =>
       `The link to the assignment is\n\n` + chalk.green(t(`${link}\n`)),
@@ -217,8 +217,8 @@ async function list(argv: GradecArgs): Promise<number> {
   const status = await server.getGradeStatus(argv.accessToken);
   const size = status.length;
 
-  const ungraded = status.filter(comment => !comment.score);
-  const graded = status.filter(comment => !!comment.score);
+  const ungraded = status.filter((comment) => !comment.score);
+  const graded = status.filter((comment) => !!comment.score);
 
   console.error(
       `${chalk.red(`${ungraded.length}/${size}`)}\tassignments still ungraded`);

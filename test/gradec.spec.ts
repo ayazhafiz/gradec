@@ -1,5 +1,5 @@
-import 'jasmine';
 import * as fs from 'fs';
+import 'jasmine';
 import * as path from 'path';
 import * as rp from 'request-promise';
 import {Grader, SCORE_PREFIX, TESTS_PREFIX} from '../src/grader';
@@ -16,7 +16,7 @@ async function clean() {
                       .split(/\n/)
                       .filter((line) => line.length)
                       .map((line) => line.split(' ')[1])
-                      .filter(url => url.startsWith('http'))
+                      .filter((url) => url.startsWith('http'))
                       .map((url) => url.split('/').reverse()[0]);
   for (const commit of commits) {
     const commitCommentsUrl =
