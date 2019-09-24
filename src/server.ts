@@ -70,7 +70,7 @@ export class GradecServer {
    */
   constructor(
       files: {commits: string, tests: string},
-      private readonly bounds: {start: number, end: number}) {
+      private readonly bounds: {readonly start: number, readonly end: number}) {
     this.fs = new GradecFs(files.commits, files.tests);
     const {commits, tests} = this.fs;
 
@@ -108,7 +108,7 @@ export class GradecServer {
     return {
       grader: await Grader.makeGrader(
           this.commitMetas, accessToken, GradecServer.handleFailedRequest),
-      errors: this.errors
+      errors: this.errors,
     };
   }
 

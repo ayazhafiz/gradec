@@ -16,6 +16,7 @@ async function clean() {
                       .split(/\n/)
                       .filter((line) => line.length)
                       .map((line) => line.split(' ')[1])
+                      .filter(url => url.startsWith('http'))
                       .map((url) => url.split('/').reverse()[0]);
   for (const commit of commits) {
     const commitCommentsUrl =
