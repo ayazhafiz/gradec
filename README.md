@@ -51,7 +51,7 @@ Examples:
 Score comments have the (regex) grammar
 
 ```typescript
-/([+|-]\d*)(:.*)?/
+/([+|-]\d+)(:.*)?/
 ```
 
 where only the first capturing group is used in accumultating the total score.
@@ -66,6 +66,7 @@ Not score comments:
 
 - `observation...` (+0 to score)
 - `3` (+0 to score)
+- `-` (+0 to score)
 
 #### Partial grading
 

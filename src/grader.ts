@@ -104,7 +104,7 @@ async function hasScoreComment(metadata: api.RequestMetadata):
 
 /**
  * Reads comments of form
- *   ([+|-]\d*)(:.*)?
+ *   ([+|-]\d+)(:.*)?
  *   ^^^^^^^^^^------- $SCORE
  *             ^^^^^-- $COMMENT
  * on the commit and accumulates discovered $SCORES on MAX_SCORE.
@@ -114,7 +114,7 @@ async function hasScoreComment(metadata: api.RequestMetadata):
  * @return promise containing total calculated score
  */
 async function scoreComments(metadata: api.RequestMetadata): Promise<number> {
-  const SCORE_COMMENT_GRAMMAR = /([+|-]\d*)(:.*)?/;
+  const SCORE_COMMENT_GRAMMAR = /([+|-]\d+)(:.*)?/;
   const comments: api.CommitCommentsResponse[] =
       await rp.get(makeRequest(metadata)).catch(Grader.onError);
 
