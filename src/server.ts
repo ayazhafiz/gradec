@@ -58,6 +58,8 @@ export class GradecServer {
    * filesystem.
    */
   private readonly commitMetas: api.CommitMetadata[] = [];
+  /** Errors in encountered commits. */
+  private readonly errors: string[] = [];
 
   /**
    * Creates a new GradecServer.
@@ -72,23 +74,26 @@ export class GradecServer {
     this.fs = new GradecFs(files.commits, files.tests);
     const {commits, tests} = this.fs;
 
-    this.commitMetas = commits.map((record, idx) => {
+    for (let i = this.bounds.start; i < commits.length && i <= this.bounds.end;
+         ++i) {
+      const record = commits[i];
       // TODO: consider supporting non-GitHub (GitLab?) URLs.
       const match = record.url.match(/.*github.com\/(.*)\/commit\/(.*)/)!;
       if (!match) {
-        throw new Error(`Expected ${record.url} to be a GitHub url.`);
+        this.errors.push(`GitHub commit missing for ${record.author}`);
+        return;
       }
       const [, repo, commit] = match;
       const meta: api.CommitMetadata = {
         author: record.author,
         commit,
-        commitUrl: commits[idx].url,
+        commitUrl: commits[i].url,
         repo,
-        testsUrl: tests[idx].url,
+        testsUrl: tests[i].url,
       };
 
-      return meta;
-    });
+      this.commitMetas.push(meta);
+    }
   }
 
   /**
@@ -98,10 +103,13 @@ export class GradecServer {
    * @param accessToken GitHub access token for Grader to use
    * @return promise containing created grader
    */
-  public async makeGrader(accessToken: string): Promise<Grader> {
-    return Grader.makeGrader(
-        this.commitMetas, this.bounds.start, this.bounds.end, accessToken,
-        GradecServer.handleFailedRequest);
+  public async makeGrader(accessToken: string):
+      Promise<{grader: Grader, errors: ReadonlyArray<string>}> {
+    return {
+      errors: this.errors,
+      grader: await Grader.makeGrader(
+          this.commitMetas, accessToken, GradecServer.handleFailedRequest),
+    };
   }
 
   /**

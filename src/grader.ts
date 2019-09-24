@@ -179,21 +179,21 @@ export class Grader implements GradeHandleIterator {
    * @return iteratable grader
    */
   public static async makeGrader(
-      commitMetas: api.CommitMetadata[], start: number, end: number,
-      accessToken: string,
+      commitMetas: api.CommitMetadata[], accessToken: string,
       onError: (err: api.CommitCommentsError) => number): Promise<Grader> {
     Grader.onError = onError;
     // Filter out all commits that are already graded, initiliazing a grader
     // with only the ungraded commits.
-    const cands = commitMetas.slice(start, end + 1);
     const toGrade =
         await Promise
-            .all(cands.map((commit) => {
+            .all(commitMetas.map((commit) => {
               const meta = makeCommitRequestMetadata(accessToken, commit);
               return hasScoreComment(meta);
             }))
             // Keep the commits that don't already have a score.
-            .then((hasScoreList) => cands.filter(() => !hasScoreList.shift()));
+            .then(
+                (hasScoreList) =>
+                    commitMetas.filter(() => !hasScoreList.shift()));
 
     return new Grader(accessToken, toGrade);
   }

@@ -1,5 +1,5 @@
-import 'jasmine';
 import * as fs from 'fs';
+import 'jasmine';
 import * as path from 'path';
 import * as rp from 'request-promise';
 import {Grader, SCORE_PREFIX, TESTS_PREFIX} from '../src/grader';
@@ -16,6 +16,7 @@ async function clean() {
                       .split(/\n/)
                       .filter((line) => line.length)
                       .map((line) => line.split(' ')[1])
+                      .filter((url) => url.startsWith('http'))
                       .map((url) => url.split('/').reverse()[0]);
   for (const commit of commits) {
     const commitCommentsUrl =
@@ -43,11 +44,14 @@ async function clean() {
 
 describe('gradec', async () => {
   let grader: Grader;
+  let errors: ReadonlyArray<string>;
 
   async function createGrader(start: number, end: number) {
     const server = new GradecServer(
         {commits: COMMITS_FILE, tests: TESTS_FILE}, {start, end});
-    grader = await server.makeGrader(ACCESS_TOKEN);
+    const graderAndErrors = await server.makeGrader(ACCESS_TOKEN);
+    grader = graderAndErrors.grader;
+    errors = graderAndErrors.errors;
   }
 
   afterEach(async (done) => {
@@ -99,6 +103,19 @@ describe('gradec', async () => {
 
       await createGrader(0, 1);
       await expectGraderOfSize(0);
+    });
+  });
+
+  describe('errors', async () => {
+    it('should correctly detect errors', async () => {
+      await createGrader(0, 2);
+      expect(errors.length).toBe(1);
+      expect(errors[0]).toBe('GitHub commit missing for nothafiz');
+    });
+
+    it('should not detect errors where there are none', async () => {
+      await createGrader(0, 1);
+      expect(errors.length).toBe(0);
     });
   });
 
