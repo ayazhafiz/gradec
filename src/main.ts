@@ -116,6 +116,9 @@ const Message = {
           chalk.green(url)}.\n`),
   CreateGrader:
       chalk.dim(`gradec is initializing. This may take a few seconds...\n`),
+  Error: (errors: ReadonlyArray<string>): string =>
+      chalk.red(`Encountered the following errors:\n`) +
+      errors.map(error => t(chalk.bold(error))).join('\n'),
   Exit: chalk.yellow(`Done. Exiting.`),
   LinkToAssignment: (link: string) =>
       `The link to the assignment is\n\n` + chalk.green(t(`${link}\n`)),
@@ -172,7 +175,11 @@ async function grade(argv: GradecArgs): Promise<number> {
   console.error(Message.CreateGrader);
 
   const server = new GradecServer(argv.files, argv.bounds);
-  const grader = await server.makeGrader(argv.accessToken);
+  const {grader, errors} = await server.makeGrader(argv.accessToken);
+
+  if (errors.length > 0) {
+    console.error(Message.Error(errors));
+  }
 
   for await (const handle of grader) {
     const {position, commitUrl, calculateAndPostGrade} = handle;
