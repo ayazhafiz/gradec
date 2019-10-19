@@ -228,7 +228,7 @@ async function list(argv: GradecArgs): Promise<number> {
       chalk.inverse(`Printing graded assignments and scores to STDOUT:\n`));
 
   for (const {author, score} of graded) {
-    console.log(`${author}\t${score}`);
+    console.log(`${author.padEnd(15)}\t${score}`);
   }
 
   return 0;

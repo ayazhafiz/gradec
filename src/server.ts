@@ -122,8 +122,7 @@ export class GradecServer {
    */
   public async getGradeStatus(accessToken: string):
       Promise<ReadonlyArray<{author: string, score: number|undefined}>> {
-    const commits =
-        this.commitMetas.slice(this.bounds.start, this.bounds.end + 1);
+    const commits = this.commitMetas;
 
     // Map comments to their scores, only if the score actually exists;
     // otherwise, keep the score as `undefined`.
