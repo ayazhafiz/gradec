@@ -81,7 +81,7 @@ export class GradecServer {
       const match = record.url.match(/.*github.com\/(.*)\/commit\/(.*)/)!;
       if (!match) {
         this.errors.push(`GitHub commit missing for ${record.author}`);
-        return;
+        continue;
       }
       const [, repo, commit] = match;
       const meta: api.CommitMetadata = {
