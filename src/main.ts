@@ -118,7 +118,7 @@ const Message = {
       chalk.dim(`gradec is initializing. This may take a few seconds...\n`),
   Error: (errors: ReadonlyArray<string>): string =>
       chalk.red(`Encountered the following errors:\n`) +
-      errors.map((error) => t(chalk.bold(error))).join('\n'),
+      errors.map((error) => t(chalk.bold(error))).join('\n') + '\n',
   Exit: chalk.yellow(`Done. Exiting.`),
   LinkToAssignment: (link: string) =>
       `The link to the assignment is\n\n` + chalk.green(t(`${link}\n`)),
@@ -175,7 +175,8 @@ async function grade(argv: GradecArgs): Promise<number> {
   console.error(Message.CreateGrader);
 
   const server = new GradecServer(argv.files, argv.bounds);
-  const {grader, errors} = await server.makeGrader(argv.accessToken);
+  const grader = await server.makeGrader(argv.accessToken);
+  const errors = server.getErrors();
 
   if (errors.length > 0) {
     console.error(Message.Error(errors));
@@ -214,6 +215,12 @@ async function grade(argv: GradecArgs): Promise<number> {
 
 async function list(argv: GradecArgs): Promise<number> {
   const server = new GradecServer(argv.files, argv.bounds);
+  const errors = server.getErrors();
+
+  if (errors.length > 0) {
+    console.error(Message.Error(errors));
+  }
+
   const status = await server.getGradeStatus(argv.accessToken);
   const size = status.length;
 

@@ -103,13 +103,9 @@ export class GradecServer {
    * @param accessToken GitHub access token for Grader to use
    * @return promise containing created grader
    */
-  public async makeGrader(accessToken: string):
-      Promise<{grader: Grader, errors: ReadonlyArray<string>}> {
-    return {
-      errors: this.errors,
-      grader: await Grader.makeGrader(
-          this.commitMetas, accessToken, GradecServer.handleFailedRequest),
-    };
+  public async makeGrader(accessToken: string): Promise<Grader> {
+    return await Grader.makeGrader(
+        this.commitMetas, accessToken, GradecServer.handleFailedRequest);
   }
 
   /**
@@ -140,5 +136,9 @@ export class GradecServer {
         score,
       };
     });
+  }
+
+  public getErrors(): ReadonlyArray<string> {
+    return this.errors;
   }
 }

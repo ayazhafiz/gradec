@@ -1,7 +1,9 @@
-import * as fs from 'fs';
 import 'jasmine';
+
+import * as fs from 'fs';
 import * as path from 'path';
 import * as rp from 'request-promise';
+
 import {Grader, SCORE_PREFIX, TESTS_PREFIX} from '../src/grader';
 import {GradecServer} from '../src/server';
 
@@ -49,9 +51,8 @@ describe('gradec', async () => {
   async function createGrader(start: number, end: number) {
     const server = new GradecServer(
         {commits: COMMITS_FILE, tests: TESTS_FILE}, {start, end});
-    const graderAndErrors = await server.makeGrader(ACCESS_TOKEN);
-    grader = graderAndErrors.grader;
-    errors = graderAndErrors.errors;
+    grader = await server.makeGrader(ACCESS_TOKEN);
+    errors = server.getErrors();
   }
 
   afterEach(async (done) => {
