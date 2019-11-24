@@ -245,11 +245,11 @@ export class Grader implements GradeHandleIterator {
 
       async function calculateAndPostGrade(): Promise<api.CommentScoreResult> {
         const score = await scoreComments(requestMeta);
-        const scoreStr = score === MAXSCORE ? '💯' : `${score}/${MAXSCORE}`;
-        const finalScoreComment = `${SCORE_PREFIX} ${scoreStr}`;
+        const finalScoreComment =
+        `${SCORE_PREFIX} ${(score === 100) ? ('💯') : (score + '/' + MAXSCORE)}`;
         const postingResult = await postComment(requestMeta, finalScoreComment);
 
-        return {comment: finalScoreComment, score, url: postingResult.html_url};
+        return { comment: finalScoreComment, score, url: postingResult.html_url };
       }
 
       const handle: GradeHandle = {
