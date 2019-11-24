@@ -248,10 +248,11 @@ export class Grader implements GradeHandleIterator {
       // Returns a promise to the result of scoring the commit.
       async function calculateAndPostGrade(): Promise<api.CommentScoreResult> {
         const score = await scoreComments(requestMeta);
-        const finalScoreComment = `${SCORE_PREFIX} ${score}/${MAXSCORE}`;
+        const finalScoreComment =
+        `${SCORE_PREFIX} ${(score === 100) ? ('💯') : (score + '/' + MAXSCORE)}`;
         const postingResult = await postComment(requestMeta, finalScoreComment);
 
-        return {comment: finalScoreComment, score, url: postingResult.html_url};
+        return { comment: finalScoreComment, score, url: postingResult.html_url };
       }
 
       const handle: GradeHandle = {
