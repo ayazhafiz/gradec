@@ -1,8 +1,8 @@
 # gradec
 
 `gradec` accumulates [score comments](#score-comments) on a GitHub commit, and
-then comments the final score on the commit. `gradec` can also comment a
-commit's CI build, and retrieve the score of a commit at a later time.
+records the final score of the commit. `gradec` can also provide a commit's
+CI build, and retrieve the score of a commit at a later time.
 
 `gradec` is designed to run on a batch of commits to grade. See [its
 usage](#usage) for more information.
@@ -10,8 +10,8 @@ usage](#usage) for more information.
 ## Installation
 
 This project uses [yarn](https://yarnpkg.com) as a dependency manager and build
-runner. After cloning the repo, install the project's dependencies and install
-the global `gradec` command.
+runner. After cloning the repo, install the project's dependencies and the
+`gradec` command globally:
 
 ```shell
 yarn install
