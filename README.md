@@ -50,8 +50,8 @@ Examples:
 `gradec` calculates the grade/score of an assignment by accumulating _score comments_ on a commit.
 Score comments have the (regex) grammar
 
-```typescript
-/([+|-]\d+)(:.*)?/
+```regex
+([+|-]\d+)(:.*)?
 ```
 
 where only the first capturing group is used in accumultating the total score.
