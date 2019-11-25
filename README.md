@@ -1,8 +1,11 @@
 # gradec
 
-`gradec` accumulates [score comments](#score-comments) on a GitHub commit, then
-pushing a comment with the final score to the commit. `gradec` can also push
-comments linking to a commit's CI builds.
+`gradec` accumulates [score comments](#score-comments) on a GitHub commit, and
+then comments the final score on the commit. `gradec` can also comment a
+commit's CI build, and retrieve the score of a commit at a later time.
+
+`gradec` is designed to run on a batch of commits to grade. See [its
+usage](#usage) for more information.
 
 ## Installation
 
