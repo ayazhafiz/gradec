@@ -131,7 +131,7 @@ describe('gradec', async () => {
     }
 
     expect(scores.length).toBe(2);
-    expect(scores).toEqual(jasmine.arrayContaining([89, 178]));
+    expect(scores).toEqual(jasmine.arrayContaining([90, 178]));
   });
 
   it('should not post link to tests multiple times', async () => {
