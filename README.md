@@ -1,14 +1,17 @@
 # gradec
 
-`gradec` accumulates [score comments](#score-comments) on a GitHub commit, then
-pushing a comment with the final score to the commit. `gradec` can also push
-comments linking to a commit's CI builds.
+`gradec` accumulates [score comments](#score-comments) on a GitHub commit, and
+records the final score of the commit. `gradec` can also provide a commit's
+CI build, and retrieve the score of a commit at a later time.
+
+`gradec` is designed to run on a batch of commits to grade. See [its
+usage](#usage) for more information.
 
 ## Installation
 
 This project uses [yarn](https://yarnpkg.com) as a dependency manager and build
-runner. After cloning the repo, install the project's dependencies and install
-the global `gradec` command.
+runner. After cloning the repo, install the project's dependencies and the
+`gradec` command globally:
 
 ```shell
 yarn install
@@ -50,8 +53,8 @@ Examples:
 `gradec` calculates the grade/score of an assignment by accumulating _score comments_ on a commit.
 Score comments have the (regex) grammar
 
-```typescript
-/([+|-]\d+)(:.*)?/
+```regex
+([+|-]\d+)(:.*)?
 ```
 
 where only the first capturing group is used in accumultating the total score.
