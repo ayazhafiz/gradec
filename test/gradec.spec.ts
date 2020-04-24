@@ -12,6 +12,8 @@ const TESTS_FILE = path.resolve('test/tests.txt');
 const ACCESS_TOKEN = process.env.GRADEC_ACCESS_TOKEN!;
 const REPO = 'ayazhafiz/gradec';
 
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10_000;
+
 async function clean() {
   const commits = await fs.readFileSync(COMMITS_FILE, 'utf8')
                       .toString()
