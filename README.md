@@ -18,6 +18,21 @@ yarn install
 yarn install-global
 ```
 
+Due to some issues with yarn installation through npm, it may be entirely possible that the location where gradec was installed is not in your PATH environment variable. If gradec is not running after `yarn install-global`, follow these steps. 
+
+If you're running iOS/Linux:
+```bash
+yarn path-nix
+# copy the above output for use below
+export PATH=COPY_PASTE_OUTPUT_HERE
+```
+
+If you're running Windows (powershell):
+```powershell
+yarn path-ps
+# copy the above output for use below
+$env:path += COPY_PASTE_OUTPUT_HERE
+```
 To run `gradec`, you will neeed to get a
 [GitHub personal access token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line)
 and export a **GRADEC_ACCESS_TOKEN** environment variable with the value of that
