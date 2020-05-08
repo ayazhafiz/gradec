@@ -18,7 +18,9 @@
     "test": "yarn build && yarn jasmine dist/**/*.spec.js",
     "refresh": "rm -rf node_modules/ && yarn install",
     "start": "node dist/src/main.js",
-    "install-global": "yarn build && yarn link"
+    "install-global": "yarn build && yarn link",
+    "path-nix": "echo '$'PATH:$(yarn global bin)",
+    "path-ps": "powershell echo \"\"\"':$(yarn global bin)'\"\"\""
   },
   "dependencies": {
     "chalk": "^2.4.2",
@@ -33,7 +35,7 @@
     "@types/request-promise": "^4.1.44",
     "@types/yargs": "^13.0.0",
     "jasmine": "^3.4.0",
-    "tslint": "^5.18.0",
+    "tslint": "^5.20.1",
     "typescript": "^3.5.3"
   }
 }
