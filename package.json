@@ -20,7 +20,7 @@
     "start": "node dist/src/main.js",
     "install-global": "yarn build && yarn link",
     "path-nix": "echo '$'PATH:$(yarn global bin)",
-    "path-ps": "powershell echo \"\"\"':$(yarn global bin)'\"\"\""
+    "path-ps": "powershell echo \"\"\"';$(yarn global bin)'\"\"\""
   },
   "dependencies": {
     "chalk": "^2.4.2",

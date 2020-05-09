@@ -24,14 +24,17 @@ If you're running macOS/Linux:
 ```bash
 yarn path-nix
 # copy the above output for use below
+# add the below line to the last line of your .bashrc file (likely ~/.bashrc)
 export PATH=COPY_PASTE_OUTPUT_HERE
+# you may have to restart your terminal
 ```
 
 If you're running Windows (powershell):
 ```powershell
 yarn path-ps
 # copy the above output for use below
-$env:path += COPY_PASTE_OUTPUT_HERE
+[Environment]::SetEnvironmentVariable("Path", $env:Path + COPIED_OUTPUT_HERE, "User")
+# you may have to restart your terminal
 ```
 To run `gradec`, you will neeed to get a
 [GitHub personal access token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line)
