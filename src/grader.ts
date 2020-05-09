@@ -243,16 +243,13 @@ export class Grader implements GradeHandleIterator {
             {...requestMeta}, `${TESTS_PREFIX} ${commit.testsUrl}`);
       }
 
-      // Handle to calculate and post a grade on a commit, determined by
-      // accumulating score comments on that commit.
-      // Returns a promise to the result of scoring the commit.
       async function calculateAndPostGrade(): Promise<api.CommentScoreResult> {
         const score = await scoreComments(requestMeta);
         const finalScoreComment =
         `${SCORE_PREFIX} ${(score === 100) ? ('💯') : (score + '/' + MAXSCORE)}`;
         const postingResult = await postComment(requestMeta, finalScoreComment);
 
-        return { comment: finalScoreComment, score, url: postingResult.html_url };
+        return {comment: finalScoreComment, score, url: postingResult.html_url};
       }
 
       const handle: GradeHandle = {
