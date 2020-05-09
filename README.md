@@ -17,7 +17,7 @@ yarn install-global
 
 Due to some issues with yarn installation, it may be that the location where gradec was installed is not in your PATH environment variable. If gradec is not running after `yarn install-global`, follow these steps. 
 
-If you're running iOS/Linux:
+If you're running macOS/Linux:
 ```bash
 yarn path-nix
 # copy the above output for use below
