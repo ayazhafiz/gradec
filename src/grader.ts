@@ -95,7 +95,7 @@ async function getExistingGrade(
   const comments = await getComments(token, commit);
   for (const comment of comments) {
     if (!comment.path && comment.body.startsWith(SCORE_PREFIX)) {
-      Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim());
+      return Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim());
     }
   }
   return undefined;
@@ -199,11 +199,10 @@ export class Grader implements GradeHandleIterator {
 
     // Filter out all commits that are already graded, initiliazing a grader
     // with only the ungraded commits.
+    const assignmentGrades = await Promise.all(
+        assignments.map(commit => getExistingGrade(accessToken, commit)));
     const unscoredAssignments =
-        await Promise.all(assignments.filter(async (commit) => {
-          const score = await getExistingGrade(accessToken, commit);
-          return !score;
-        }));
+        assignments.filter((_, i) => assignmentGrades[i] === undefined);
 
     return {grader: new Grader(unscoredAssignments, accessToken), errors};
   }
