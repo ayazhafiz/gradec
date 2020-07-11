@@ -5,7 +5,8 @@ import * as open from 'open';
 import * as readline from 'readline';
 import * as yargs from 'yargs';
 import * as api from './api';
-import {GradecServer} from './server';
+import * as cp from 'child_process';
+import {Grader} from './grader';
 
 enum GradecCommand {
   grade = 'grade',
@@ -26,7 +27,7 @@ interface GradecArgs {
   openIn: string|undefined;
 }
 
-function getArgv() {
+function getArgs() {
   const TOKEN_ENV = 'GRADEC_ACCESS_TOKEN';
   const accessToken = process.env[TOKEN_ENV];
   if (!accessToken) {
@@ -57,14 +58,14 @@ function getArgv() {
             r: {
               alias: 'range',
               demandOption: true,
-              describe: 'Space-separated range of line numbers to grade',
+              describe: 'Space-separated range of assignments to grade',
               nargs: 2,
               type: 'array',
             },
             t: {
               alias: 'tests',
               demandOption: true,
-              describe: 'CI tests to grade',
+              describe: 'Links to CI builds corresponding to commits',
               requiresArg: true,
               type: 'string',
             },
@@ -88,11 +89,9 @@ function getArgv() {
 
   const {ao, c: commits, t: tests, r: range, _: commands} = argv;
 
-  let command: GradecCommand =
+  const command = commands.length === 0 ?
+      GradecCommand.grade :
       GradecCommand[commands[0] as keyof typeof GradecCommand];
-  if (commands.length === 0 || !command) {
-    command = GradecCommand.grade;
-  }
 
   const [start, end] = range.map(Number);
   const gradecArgs: GradecArgs = {
@@ -159,13 +158,15 @@ async function negativeResponse(
   return resp === to.naffirm;
 }
 
-async function maybeAutoOpen(link: string, app: string|undefined) {
+async function maybeAutoOpen(
+    link: string, app: string|undefined): Promise<cp.ChildProcess|undefined> {
   if (app) {
-    open(link, {
+    return open(link, {
       app,
       wait: false,
     });
   }
+  return;
 }
 
 async function grade(argv: GradecArgs): Promise<number> {
@@ -174,9 +175,12 @@ async function grade(argv: GradecArgs): Promise<number> {
   console.error(Message.Welcome);
   console.error(Message.CreateGrader);
 
-  const server = new GradecServer(argv.files, argv.bounds);
-  const grader = await server.makeGrader(argv.accessToken);
-  const errors = server.getErrors();
+  const {grader, errors} = await Grader.makeGrader(
+      argv.files.commits,
+      argv.files.tests,
+      argv.bounds,
+      argv.accessToken,
+  );
 
   if (errors.length > 0) {
     console.error(Message.Error(errors));
@@ -185,25 +189,18 @@ async function grade(argv: GradecArgs): Promise<number> {
   for await (const handle of grader) {
     const {position, commitUrl, calculateAndPostGrade} = handle;
 
-    // Ask user if they'd like to grade the next assignment.
     if (await negativeResponse(Message.NextAssignment)) {
       break;
     }
 
-    // Provide user with next assignment. Open a browser window to the
-    // assignment if the user has asked for auto-opened links.
     console.error(Message.AssignmentPosition(position.at, position.total));
     console.error(Message.LinkToAssignment(commitUrl));
     await maybeAutoOpen(commitUrl, openIn);
 
-    // Wait until user is done grading the commit. If they bail before finishing
-    // grading, `gradec` is done.
     if (await negativeResponse(Message.TypeWhenDone)) {
       break;
     }
 
-    // Provide user with calculated assignment grade. Open a browser window to
-    // the score comment if the user has asked for auto-opened links.
     const gradeResult = await calculateAndPostGrade();
     console.error(Message.CalculatedGrade(gradeResult));
     await maybeAutoOpen(gradeResult.url, openIn);
@@ -214,18 +211,22 @@ async function grade(argv: GradecArgs): Promise<number> {
 }
 
 async function list(argv: GradecArgs): Promise<number> {
-  const server = new GradecServer(argv.files, argv.bounds);
-  const errors = server.getErrors();
+  const {grader, errors} = await Grader.makeGrader(
+      argv.files.commits,
+      argv.files.tests,
+      argv.bounds,
+      argv.accessToken,
+  );
 
   if (errors.length > 0) {
     console.error(Message.Error(errors));
   }
 
-  const status = await server.getGradeStatus(argv.accessToken);
+  const scores = await grader.getAssignmentScores();
   const size = status.length;
 
-  const ungraded = status.filter((comment) => !comment.score);
-  const graded = status.filter((comment) => !!comment.score);
+  const ungraded = scores.filter((comment) => !comment.score);
+  const graded = scores.filter((comment) => !!comment.score);
 
   console.error(
       `${chalk.red(`${ungraded.length}/${size}`)}\tassignments still ungraded`);
@@ -241,8 +242,8 @@ async function list(argv: GradecArgs): Promise<number> {
   return 0;
 }
 
-async function main(): Promise<number> {
-  const argv = await getArgv();
+function main(): Promise<number> {
+  const argv = getArgs();
   switch (argv.command) {
     case GradecCommand.grade:
       return grade(argv);

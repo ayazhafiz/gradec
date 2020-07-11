@@ -1,20 +1,54 @@
+import * as fs from 'fs';
 import * as rp from 'request-promise';
+import * as util from 'util';
 import * as api from './api';
 
 const MAXSCORE: number = Number(process.env.MAXSCORE || 100);
-export const SCORE_PREFIX = 'Score:';
-export const TESTS_PREFIX = 'CI tests at';
+const RE_GH_COMMIT = /.*github.com\/(.*)\/commit\/(.*)/;
+const RE_SCORE_COMMENT = /^([+|-]\d+)(:.*)?/;
+const SCORE_PREFIX = 'Score:';
+const TESTS_PREFIX = 'CI tests at';
+
+/** Describes a "<author> <url>" line listing. */
+interface Submission {
+  readonly author: string;
+  readonly url: string;
+}
+
+function getSubmissions(commitsFile: string, testsFile: string):
+    {commits: Submission[], tests: Submission[]} {
+  function split(file: string) {
+    return fs.readFileSync(file, 'utf8')
+        .split(/\r?\n/)
+        .filter((line) => line.length)  // discard empty lines
+        .map((line) => {
+          // A line in the file should look like
+          //   "<author> <url>"
+          const [author, url] = line.split(' ');
+          return {author, url};
+        });
+  }
+
+  return {commits: split(commitsFile), tests: split(testsFile)};
+}
+
+function handleFailedRequest(err: api.CommitCommentsError): number {
+  console.error(`Failed to process request\n${util.inspect(err.options)}`);
+  console.error(`Dumping request error message and exiting.\n`);
+  console.error(util.inspect(err.message));
+  return 1;
+}
 
 /**
  * Creates a GitHub commit comments request object from some request metadata.
- * See `makeCommitRequestMetadata` for more details on the metadata.
+ * See `getCommitRequestMetadata` for more details on the metadata.
  */
-export function makeRequest({
-  accessToken,
-  repo,
-  commit,
-  message,
-}: api.RequestMetadata): api.CommitCommentsRequest {
+function makeRequest(
+    accessToken: string, {
+      repo,
+      commit,
+    }: api.CommitMetadata,
+    message?: string): api.CommitCommentsRequest {
   const request: any = {
     headers: {
       'Authorization': `token ${accessToken}`,
@@ -31,75 +65,40 @@ export function makeRequest({
 }
 
 /**
- * Creates metadata for a request to be made about a commit.
- */
-export function makeCommitRequestMetadata(
-    accessToken: string, commitMeta: api.CommitMetadata): api.RequestMetadata {
-  const {commit, repo} = commitMeta;
-  return {
-    accessToken,
-    commit,
-    repo,
-  };
-}
-
-/**
  * Gets all the comments on a particular commit.
- *
- * @param metadata metadata about the commit being requested; see
- *     `makeCommitRequestMetadata` for more details
- * @return promise containing all comments on the commit
  */
-export async function getComments(metadata: api.RequestMetadata):
+async function getComments(token: string, commit: api.CommitMetadata):
     Promise<api.CommitCommentsResponse[]> {
-  return rp.get(makeRequest(metadata)).catch(Grader.onError);
+  return rp.get(makeRequest(token, commit)).catch(handleFailedRequest);
 }
 
 /**
  * Posts a comment on a particular commit, but not on any particular line or
  * file in the commit.
- *
- * @param metadata metadata about the commit being requested; see
- *     `makeCommitRequestMetadata` for more details
- * @param comment comment to make
- * @return promise containing response of posting the comment
  */
-async function postComment(options: api.RequestMetadata, comment: string):
-    Promise<api.CommitCommentsResponse> {
-  return rp.post(makeRequest({...options, message: comment}))
+async function postComment(
+    token: string,
+    commit: api.CommitMetadata,
+    comment: string,
+    ): Promise<api.CommitCommentsResponse> {
+  return rp.post(makeRequest(token, commit, comment))
       .promise()
-      .catch(Grader.onError);
+      .catch(handleFailedRequest);
 }
 
 /**
- * Maps all comments on a commit to their score if the comment is a score
- * comment, or to `undefined` otherwise.
- *
- * @param metadata metadata about the commit being requested; see
- *     `makeCommitRequestMetadata` for more details
- * @param promise containing all comments mapped to their score comment or
- *     `undefined` if the comment is not a score comment
+ * Returns the grade of an assignment if it already has one as a comment,
+ * otherwise returns `undefined`.
  */
-export async function getScoreComments(metadata: api.RequestMetadata):
-    Promise<Array<number|undefined>> {
-  return getComments(metadata).then(
-      (comments) => comments.map(
-          (comment) => !comment.path && comment.body.startsWith(SCORE_PREFIX) ?
-              Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim()) :
-              undefined));
-}
-
-/**
- * Returns whether or not a commit already has a score comment. If it
- * does, it probably should not be considered for grading.
- *
- * @param metadata metadata about the commit being requested; see
- *     `makeCommitRequestMetadata` for more details
- */
-async function hasScoreComment(metadata: api.RequestMetadata):
-    Promise<boolean> {
-  return getScoreComments(metadata).then(
-      (comments) => !!comments.find((comment) => !!comment));
+async function getExistingGrade(
+    token: string, commit: api.CommitMetadata): Promise<number|undefined> {
+  const comments = await getComments(token, commit);
+  for (const comment of comments) {
+    if (!comment.path && comment.body.startsWith(SCORE_PREFIX)) {
+      return Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim());
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -108,18 +107,16 @@ async function hasScoreComment(metadata: api.RequestMetadata):
  *   ^^^^^^^^^^------- $SCORE
  *             ^^^^^-- $COMMENT
  * on the commit and accumulates discovered $SCORES on MAX_SCORE.
- *
- * @param metadata metadata about the commit being requested; see
- *     `makeCommitRequestMetadata` for more details
- * @return promise containing total calculated score
  */
-async function scoreComments(metadata: api.RequestMetadata): Promise<number> {
-  const SCORE_COMMENT_GRAMMAR = /^([+|-]\d+)(:.*)?/;
+async function gradeAssignment(
+    token: string,
+    commit: api.CommitMetadata,
+    ): Promise<number> {
   const comments: api.CommitCommentsResponse[] =
-      await rp.get(makeRequest(metadata)).catch(Grader.onError);
+      await rp.get(makeRequest(token, commit)).catch(handleFailedRequest);
 
   const totalScore = comments.reduce((res, comment) => {
-    const match = comment.body.match(SCORE_COMMENT_GRAMMAR);
+    const match = comment.body.match(RE_SCORE_COMMENT);
     if (match) {
       res += Number(match[1]);
     }
@@ -132,7 +129,7 @@ async function scoreComments(metadata: api.RequestMetadata): Promise<number> {
 /**
  * Represents a handle to a grade request made on one commit.
  */
-export interface GradeHandle {
+interface GradeHandle {
   /** URL of commit. */
   commitUrl: string;
   /** URL of posted comment specifying CI tests URL. */
@@ -146,7 +143,7 @@ export interface GradeHandle {
 /**
  * Represents an iterable grader. See `Grader` for an implementation.
  */
-export interface GradeHandleIterator {
+interface GradeHandleIterator {
   [Symbol.asyncIterator](): AsyncIterableIterator<GradeHandle>;
 }
 
@@ -169,88 +166,93 @@ export class Grader implements GradeHandleIterator {
    *
    * The returned iterable grader will only grade commits that are in the range
    * [start, end] of the commitsMeta list and that have not already been graded.
-   *
-   * @param commitMetas commit metadata to use in grading
-   * @param start starting index of commit metadata to grade
-   * @param end ending index of commit metadata to grade
-   * @param accessToken GitHub access token to use in grading
-   * @param onError callback invoked on a failed request, returning a status
-   *     code.
-   * @return iteratable grader
    */
   public static async makeGrader(
-      commitMetas: api.CommitMetadata[], accessToken: string,
-      onError: (err: api.CommitCommentsError) => number): Promise<Grader> {
-    Grader.onError = onError;
+      commitsFile: string,
+      testsFile: string,
+      bounds: {readonly start: number, readonly end: number},
+      accessToken: string,
+      ): Promise<{grader: Grader, errors: string[]}> {
+    const {commits, tests} = getSubmissions(commitsFile, testsFile);
+
+    const assignments: api.CommitMetadata[] = [];
+    const errors: string[] = [];
+    for (let i = bounds.start; i < commits.length && i <= bounds.end; ++i) {
+      const record = commits[i];
+      // TODO: consider supporting non-GitHub (GitLab?) URLs.
+      const match = record.url.match(RE_GH_COMMIT)!;
+      if (!match) {
+        errors.push(`GitHub commit missing for ${record.author}`);
+        continue;
+      }
+      const [, repo, commit] = match;
+      const meta: api.CommitMetadata = {
+        author: record.author,
+        commit,
+        commitUrl: commits[i].url,
+        repo,
+        testsUrl: tests[i].url,
+      };
+
+      assignments.push(meta);
+    }
+
     // Filter out all commits that are already graded, initiliazing a grader
     // with only the ungraded commits.
-    const toGrade =
-        await Promise
-            .all(commitMetas.map((commit) => {
-              const meta = makeCommitRequestMetadata(accessToken, commit);
-              return hasScoreComment(meta);
-            }))
-            // Keep the commits that don't already have a score.
-            .then(
-                (hasScoreList) =>
-                    commitMetas.filter(() => !hasScoreList.shift()));
+    const assignmentGrades = await Promise.all(
+        assignments.map(commit => getExistingGrade(accessToken, commit)));
+    const unscoredAssignments =
+        assignments.filter((_, i) => assignmentGrades[i] === undefined);
 
-    return new Grader(accessToken, toGrade);
+    return {grader: new Grader(unscoredAssignments, accessToken), errors};
   }
 
-  /**
-   * Request error handler. This is reset everytime a new grader is created by
-   * `makeGrader`.
-   *
-   * TODO: make this non-static so multiple Graders can be used at once.
-   */
-  public static onError: (err: api.CommitCommentsError) => number =
-      () => {
-        return 0;
-      }
+  private constructor(
+      private readonly assignments: api.CommitMetadata[],
+      private readonly token: string,
+  ) {}
 
   /**
-   * Constructs a Grader from a GitHub access token and a list of commits to
-   * grade.
-   *
-   * Use `Grader#makeGrader` to create a public instance of a Grader.
+   * Gets information about any already-known final scores in the assignments.
    */
-  private constructor(
-      /** GitHub personal access token. */
-      private readonly accessToken: string,
-      /** Commits to grade. */
-      private readonly commits: api.CommitMetadata[],
-  ) {}
+  public getAssignmentScores():
+      Promise<ReadonlyArray<{author: string, score: number|undefined}>> {
+    return Promise.all(this.assignments.map(async (commit) => {
+      const score = await getExistingGrade(this.token, commit);
+      return {author: commit.author, score};
+    }));
+  }
 
   /**
    * Iterates over all commits in the Grader, generating a GradeHandle for each.
    */
   public async * [Symbol.asyncIterator]() {
-    const total = this.commits.length;
+    const total = this.assignments.length;
     for (let i = 0; i < total; ++i) {
-      const commit = this.commits[i];
-      const requestMeta = makeCommitRequestMetadata(this.accessToken, commit);
+      const commit = this.assignments[i];
 
       // Find the comment that points to the tests URL, if it has been posted
       // before (this can happen when someone quits grading an assignment after
       // it has been opened).
       let testsComment =
-          (await getComments(requestMeta))
+          (await getComments(this.token, commit))
               .find((comment) => comment.body.startsWith(TESTS_PREFIX));
       if (!testsComment) {
         // Tests URL comment doesn't exist; post it.
         testsComment = await postComment(
-            {...requestMeta}, `${TESTS_PREFIX} ${commit.testsUrl}`);
+            this.token, commit, `${TESTS_PREFIX} ${commit.testsUrl}`);
       }
 
-      async function calculateAndPostGrade(): Promise<api.CommentScoreResult> {
-        const score = await scoreComments(requestMeta);
+      const calculateAndPostGrade =
+          async(): Promise<api.CommentScoreResult> => {
+        const score = await gradeAssignment(this.token, commit);
         const scoreStr = score === MAXSCORE ? '💯' : `${score}/${MAXSCORE}`;
         const finalScoreComment = `${SCORE_PREFIX} ${scoreStr}`;
-        const postingResult = await postComment(requestMeta, finalScoreComment);
+        const postingResult =
+            await postComment(this.token, commit, finalScoreComment);
 
         return {comment: finalScoreComment, score, url: postingResult.html_url};
-      }
+      };
 
       const handle: GradeHandle = {
         calculateAndPostGrade,
@@ -266,3 +268,8 @@ export class Grader implements GradeHandleIterator {
     }
   }
 }
+
+export const TEST_ONLY = {
+  SCORE_PREFIX,
+  TESTS_PREFIX
+};

@@ -1,16 +1,17 @@
 # gradec
 
+`gradec` is a tool for grading student assignment on GitHub.
 `gradec` accumulates [score comments](#score-comments) on a GitHub commit, and
-records the final score of the commit. `gradec` can also provide a commit's
-CI build, and retrieve the score of a commit at a later time.
+records the final grade of the assignment on the commit. `gradec` works with
+commits' CI builds, and can retrieve the grade of an assignment at a later time.
 
-`gradec` is designed to run on a batch of commits to grade. See [its
-usage](#usage) for more information.
+`gradec` is designed to run on a batch of assignment submissions to grade. See
+[its usage](#usage) for more information.
 
 ## Installation
 
 This project uses [yarn](https://yarnpkg.com) as a dependency manager and build
-runner. After cloning the repo, install the project's dependencies and the
+tool. After cloning the repo, install the project's dependencies and the
 `gradec` command globally:
 
 ```shell
@@ -37,8 +38,8 @@ Options:
   --version          Show version number                              [boolean]
   --ao, --auto-open  Automatically opens links in a browser           [string] [default: "Safari"]
   -c, --commits      (GitHub) commits to grade                        [string] [required]
-  -t, --tests        CI tests to grade                                [string] [required]
-  -r, --range        Space-separated range of line numbers to grade   [array] [required]
+  -t, --tests        Links to CI builds corresponding to commits      [string] [required]
+  -r, --range        Space-separated range of assignments to grade    [array] [required]
   -h, --help         Show help                                        [boolean]
 
 Examples:
@@ -51,7 +52,7 @@ Examples:
 #### Score comments
 
 `gradec` calculates the grade/score of an assignment by accumulating _score comments_ on a commit.
-Score comments have the (regex) grammar
+Score comments have the grammar
 
 ```regex
 ([+|-]\d+)(:.*)?
@@ -83,15 +84,6 @@ have been graded:
 
 ## Development
 
-Please lint, format, and test your code after development. There are no
-pre-commit hooks, so this is mostly on an honor system.
-
-This project uses [tslint](https://palantir.github.io/tslint/),
-[clang-format](https://clang.llvm.org/docs/ClangFormat.html), and
-[Jasmine](https://jasmine.github.io/) as a linter, automated formatter, and test
-framework, respectively. `tslint` and `jasmine` are installed with the project
-dependencies; `clang-format` must be installed separately.
-
 ```shell
 yarn format
 yarn lint
@@ -101,12 +93,11 @@ yarn test
 
 ## Contribution
 
-There are no formal contribution guidelines for this project.
+All contributions are welcomed and highly appreciated.
 
 If you would like to report a bug, ask a question, or request a feature, please
-open an [issue](https://github.com/ayazhafiz/gradec/issues) rather than reaching
-out personally.
+open an [issue](https://github.com/ayazhafiz/gradec/issues).
 
 If you would like to implement a change, please submit a
-[PR](https://github.com/ayazhafiz/gradec/pulls) (and optionally open an issue if
-your change is significant).
+[PR](https://github.com/ayazhafiz/gradec/pulls). If your change is significant, it is usually worth
+opening an issue for discussion.

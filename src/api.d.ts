@@ -17,14 +17,6 @@ export interface CommitCommentsError {
   options: CommitCommentsRequest;
 }
 
-export interface RequestMetadata {
-  accessToken: string;
-  repo: string;
-  commit: string;
-  message?: string;
-  position?: number;
-}
-
 export interface CommentScoreResult {
   comment: string;
   score: number;
