@@ -4,8 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as rp from 'request-promise';
 
-import {Grader, SCORE_PREFIX, TESTS_PREFIX} from '../src/grader';
-import {GradecServer} from '../src/server';
+import {Grader, TEST_ONLY} from '../src/grader';
+const {SCORE_PREFIX, TESTS_PREFIX} = TEST_ONLY;
 
 const COMMITS_FILE = path.resolve('test/commits.txt');
 const TESTS_FILE = path.resolve('test/tests.txt');
@@ -15,7 +15,7 @@ const REPO = 'ayazhafiz/gradec';
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 10_000;
 
 async function clean() {
-  const commits = await fs.readFileSync(COMMITS_FILE, 'utf8')
+  const commits = fs.readFileSync(COMMITS_FILE, 'utf8')
                       .toString()
                       .split(/\n/)
                       .filter((line) => line.length)
@@ -51,10 +51,10 @@ describe('gradec', async () => {
   let errors: ReadonlyArray<string>;
 
   async function createGrader(start: number, end: number) {
-    const server = new GradecServer(
-        {commits: COMMITS_FILE, tests: TESTS_FILE}, {start, end});
-    grader = await server.makeGrader(ACCESS_TOKEN);
-    errors = server.getErrors();
+    const data = await Grader.makeGrader(
+        COMMITS_FILE, TESTS_FILE, {start, end}, ACCESS_TOKEN);
+    grader = data.grader;
+    errors = data.errors;
   }
 
   afterEach(async (done) => {

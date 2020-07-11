@@ -269,3 +269,8 @@ export class Grader implements GradeHandleIterator {
     }
   }
 }
+
+export const TEST_ONLY = {
+  SCORE_PREFIX,
+  TESTS_PREFIX
+};
