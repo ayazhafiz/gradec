@@ -1,7 +1,7 @@
 {
   "name": "gradec",
   "version": "0.0.0",
-  "description": "Grade compiler.",
+  "description": "GitHub grader.",
   "main": "dist/src/main.js",
   "bin": {
     "gradec": "dist/src/main.js"
