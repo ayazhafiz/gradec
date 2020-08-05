@@ -12,6 +12,7 @@
   "private": true,
   "scripts": {
     "build": "yarn tsc",
+    "build-binary": "yarn build && yarn nexe dist/src/main.js -o gradec",
     "format": "clang-format -i src/*.ts",
     "lint": "yarn tslint --project .",
     "lint:fix": "yarn lint --fix",
@@ -33,6 +34,7 @@
     "@types/request-promise": "^4.1.44",
     "@types/yargs": "^13.0.0",
     "jasmine": "^3.4.0",
+    "nexe": "^3.3.7",
     "tslint": "^5.18.0",
     "typescript": "^3.5.3"
   }
