@@ -5,9 +5,6 @@
 records the final grade of the assignment on the commit. `gradec` works with
 commits' CI builds, and can retrieve the grade of an assignment at a later time.
 
-`gradec` is designed to run on a batch of assignment submissions to grade. See
-[its usage](#usage) for more information.
-
 ## Installation
 
 ### Binary releases
@@ -34,27 +31,9 @@ repeating this for every shell instance.
 
 ## Usage
 
-```
-Usage: gradec [options]
+`gradec` is designed to run on a batch of assignment submissions to grade.
 
-Commands:
-  gradec grade  perform assignment grading    [default]
-  gradec list   list assignment grade status
-
-Options:
-  --version          Show version number                              [boolean]
-  --ao, --auto-open  Automatically opens links in a browser           [string] [default: "Safari"]
-  -c, --commits      (GitHub) commits to grade                        [string] [required]
-  -t, --tests        Links to CI builds corresponding to commits      [string] [required]
-  -r, --range        Space-separated range of assignments to grade    [array] [required]
-  -h, --help         Show help                                        [boolean]
-
-Examples:
-  gradec grade -c commits.txt -t travis.txt -r 1 20     grade lines 1-20 in `commits.txt' and `travis.txt'
-  gradec -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"  grade lines 5-10 in `c.txt' and `t.txt', auto-opening links in Google Chrome
-  gradec list -c c.txt -t t.xt -r 5 10                  list grading status of lines 5-10 in `c.txt' and `t.txt'
-  gradec list -c c.txt -t t.xt -r 5 10 > grades.txt     write any known grades for assignments on lines 5-10 to `grades.txt'
-```
+After installing, please run `gradec --help` for usage information and available options.
 
 #### Score comments
 

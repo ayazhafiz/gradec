@@ -172,6 +172,7 @@ export class Grader implements GradeHandleIterator {
       testsFile: string,
       bounds: {readonly start: number, readonly end: number},
       accessToken: string,
+      emojify: boolean,
       ): Promise<{grader: Grader, errors: string[]}> {
     const {commits, tests} = getSubmissions(commitsFile, testsFile);
 
@@ -204,12 +205,16 @@ export class Grader implements GradeHandleIterator {
     const unscoredAssignments =
         assignments.filter((_, i) => assignmentGrades[i] === undefined);
 
-    return {grader: new Grader(unscoredAssignments, accessToken), errors};
+    return {
+      grader: new Grader(unscoredAssignments, accessToken, emojify),
+      errors
+    };
   }
 
   private constructor(
       private readonly assignments: api.CommitMetadata[],
       private readonly token: string,
+      private readonly emojify: boolean,
   ) {}
 
   /**
@@ -246,7 +251,12 @@ export class Grader implements GradeHandleIterator {
       const calculateAndPostGrade =
           async(): Promise<api.CommentScoreResult> => {
         const score = await gradeAssignment(this.token, commit);
-        const scoreStr = score === MAXSCORE ? '💯' : `${score}/${MAXSCORE}`;
+        let scoreStr;
+        if (score === MAXSCORE) {
+          scoreStr = this.emojify ? '💯' : MAXSCORE;
+        } else {
+          scoreStr = `${score}/${MAXSCORE}`;
+        }
         const finalScoreComment = `${SCORE_PREFIX} ${scoreStr}`;
         const postingResult =
             await postComment(this.token, commit, finalScoreComment);
