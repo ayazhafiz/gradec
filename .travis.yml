@@ -1,17 +1,50 @@
 language: node_js
+node_js:
+  - 12
 
-# Tests must be run sequentially to not interefere with GH API requests.
-jobs:
-  include:
-    - stage: 10
-      node_js: 10
-    - stage: 11
-      node_js: 11
-    - stage: 12
-      node_js: 12
-    - stage: node
-      node_js: node
-    - stage: lts
-      node_js: lts/*
-os: linux
-script: yarn test
+# https://travis-ci.community/t/build-doesnt-finish-after-completing-tests/288/24
+env: YARN_GPG=no
+
+os:
+  - linux
+  - osx
+  - windows
+
+script: 
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      yarn test
+    fi
+    echo 0
+
+before_deploy:
+  - |
+    git config --local user.name "ayazhafiz"
+    git config --local user.email "ayaz.hafiz.1@gmail.com"
+    export TRAVIS_TAG=${TRAVIS_TAG:-$(git log --format=%h -1)}
+    git tag $TRAVIS_TAG
+
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      yarn nexe dist/src/main.js -o "gradec-x86_64-linux"
+      export DEPLOY_FILE="gradec-x86_64-linux"
+    elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      yarn nexe dist/src/main.js -o "gradec-x86_64-apple-darwin"
+      export DEPLOY_FILE="gradec-x86_64-apple-darwin"
+    else
+      yarn nexe dist/src/main.js -o "gradec-windows"
+      export DEPLOY_FILE="gradec-windows"
+    fi
+
+deploy:
+  provider: releases
+  api_key: "$GRADEC_ACCESS_TOKEN"
+  file: $DEPLOY_FILE
+  overwrite: true
+  on:
+    branch: master
+
+after_deploy:
+  - |
+    sed -i '' "s%\[latest build from master\](https://github.com/ayazhafiz/gradec/releases/tag/.*)%[latest build from master](https://github.com/ayazhafiz/gradec/releases/tag/$TRAVIS_TAG)%" README.md
+    git commit -a -m "Update release link for $TRAVIS_TAG"
+    git push

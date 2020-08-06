@@ -10,6 +10,13 @@ commits' CI builds, and can retrieve the grade of an assignment at a later time.
 
 ## Installation
 
+### Binary releases
+
+You can install the [latest build from master](https://github.com/ayazhafiz/gradec/releases/tag/0)
+for Linux, macOS, and Windows on the releaes page.
+
+### From source
+
 This project uses [yarn](https://yarnpkg.com) as a dependency manager and build
 tool. After cloning the repo, install the project's dependencies and the
 `gradec` command globally:
