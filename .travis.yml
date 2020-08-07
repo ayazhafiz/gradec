@@ -24,6 +24,8 @@ before_deploy:
     export TRAVIS_TAG=${TRAVIS_TAG:-$(git log --format=%h -1)}
     git tag $TRAVIS_TAG || true
 
+    yarn build
+
     if [ "$TRAVIS_OS_NAME" = "linux" ]; then
       yarn nexe dist/src/main.js -o "gradec-x86_64-linux"
       export DEPLOY_FILE="gradec-x86_64-linux"
@@ -49,5 +51,5 @@ after_deploy:
     if [ "$TRAVIS_OS_NAME" = "linux" ]; then
       scripts/replace_release_link $TRAVIS_TAG
       git commit -a -m "Update release link for $TRAVIS_TAG"
-      git push
+      git push https://ayazhafiz:${GRADEC_ACCESS_TOKEN}@github.com/ayazhafiz/gradec.git HEAD:master
     fi
