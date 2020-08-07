@@ -27,7 +27,7 @@ before_deploy:
     yarn build
 
     if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-      yarn nexe dist/src/main.js -o "gradec-x86_64-linux"
+      yarn nexe --build dist/src/main.js -o "gradec-x86_64-linux"
       export DEPLOY_FILE="gradec-x86_64-linux"
     elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
       yarn nexe dist/src/main.js -o "gradec-x86_64-apple-darwin"
