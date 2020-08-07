@@ -52,7 +52,7 @@ describe('gradec', async () => {
 
   async function createGrader(start: number, end: number) {
     const data = await Grader.makeGrader(
-        COMMITS_FILE, TESTS_FILE, {start, end}, ACCESS_TOKEN);
+        COMMITS_FILE, TESTS_FILE, {start, end}, ACCESS_TOKEN, false);
     grader = data.grader;
     errors = data.errors;
   }

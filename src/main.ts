@@ -25,6 +25,7 @@ interface GradecArgs {
     end: number,
   };
   openIn: string|undefined;
+  emojify: boolean;
 }
 
 function getArgs() {
@@ -69,6 +70,12 @@ function getArgs() {
               requiresArg: true,
               type: 'string',
             },
+            emojify: {
+              demandOption: false,
+              describe: 'Use emojis when grading. 100 -> 💯',
+              type: 'boolean',
+              default: false,
+            }
           })
           .example(
               '$0 grade -c commits.txt -t travis.txt -r 1 20',
@@ -87,7 +94,7 @@ function getArgs() {
           .wrap(yargs.terminalWidth())
           .argv;
 
-  const {ao, c: commits, t: tests, r: range, _: commands} = argv;
+  const {ao, c: commits, t: tests, r: range, emojify, _: commands} = argv;
 
   const command = commands.length === 0 ?
       GradecCommand.grade :
@@ -100,6 +107,7 @@ function getArgs() {
     command,
     files: {commits, tests},
     openIn: ao,
+    emojify,
   };
 
   return gradecArgs;
@@ -180,6 +188,7 @@ async function grade(argv: GradecArgs): Promise<number> {
       argv.files.tests,
       argv.bounds,
       argv.accessToken,
+      argv.emojify,
   );
 
   if (errors.length > 0) {
@@ -216,6 +225,7 @@ async function list(argv: GradecArgs): Promise<number> {
       argv.files.tests,
       argv.bounds,
       argv.accessToken,
+      argv.emojify,
   );
 
   if (errors.length > 0) {
