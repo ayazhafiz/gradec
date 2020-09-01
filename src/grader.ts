@@ -86,6 +86,21 @@ async function postComment(
       .catch(handleFailedRequest);
 }
 
+function score2str(score: number, emojify: boolean) {
+  let scoreStr;
+  if (score === MAXSCORE) {
+    scoreStr = emojify ? '💯' : MAXSCORE;
+  } else {
+    scoreStr = `${score}/${MAXSCORE}`;
+  }
+  return `${SCORE_PREFIX} ${scoreStr}`;
+}
+
+function str2score(str: string) {
+  const scoreStr = str.split(SCORE_PREFIX)[1].split('/')[0].trim();
+  return scoreStr === '💯' ? 100 : Number(scoreStr);
+}
+
 /**
  * Returns the grade of an assignment if it already has one as a comment,
  * otherwise returns `undefined`.
@@ -95,7 +110,7 @@ async function getExistingGrade(
   const comments = await getComments(token, commit);
   for (const comment of comments) {
     if (!comment.path && comment.body.startsWith(SCORE_PREFIX)) {
-      return Number(comment.body.split(SCORE_PREFIX)[1].split('/')[0].trim());
+      return str2score(comment.body);
     }
   }
   return undefined;
@@ -251,17 +266,10 @@ export class Grader implements GradeHandleIterator {
       const calculateAndPostGrade =
           async(): Promise<api.CommentScoreResult> => {
         const score = await gradeAssignment(this.token, commit);
-        let scoreStr;
-        if (score === MAXSCORE) {
-          scoreStr = this.emojify ? '💯' : MAXSCORE;
-        } else {
-          scoreStr = `${score}/${MAXSCORE}`;
-        }
-        const finalScoreComment = `${SCORE_PREFIX} ${scoreStr}`;
-        const postingResult =
-            await postComment(this.token, commit, finalScoreComment);
+        const scoreStr = score2str(score, this.emojify);
+        const postingResult = await postComment(this.token, commit, scoreStr);
 
-        return {comment: finalScoreComment, score, url: postingResult.html_url};
+        return {comment: scoreStr, score, url: postingResult.html_url};
       };
 
       const handle: GradeHandle = {
