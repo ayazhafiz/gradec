@@ -50,9 +50,13 @@ describe('gradec', async () => {
   let grader: Grader;
   let errors: ReadonlyArray<string>;
 
-  async function createGrader(start: number, end: number) {
+  async function createGrader(
+      start: number,
+      end: number,
+      emojify: boolean = false,
+  ) {
     const data = await Grader.makeGrader(
-        COMMITS_FILE, TESTS_FILE, {start, end}, ACCESS_TOKEN, false);
+        COMMITS_FILE, TESTS_FILE, {start, end}, ACCESS_TOKEN, emojify);
     grader = data.grader;
     errors = data.errors;
   }
