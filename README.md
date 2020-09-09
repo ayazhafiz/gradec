@@ -9,7 +9,7 @@ commits' CI builds, and can retrieve the grade of an assignment at a later time.
 
 ### Binary releases
 
-You can install the [latest build from master](https://github.com/ayazhafiz/gradec/releases/tag/e05fb66)
+You can install the [latest build from master](https://github.com/ayazhafiz/gradec/releases/tag/7c48283)
 for Linux, macOS, and Windows on the releaes page.
 
 ### From source
