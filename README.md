@@ -23,6 +23,9 @@ yarn install
 yarn install-global
 ```
 
+Make sure yarn's [global install location is in your PATH](https://classic.yarnpkg.com/en/docs/cli/global#adding-the-install-location-to-your-path);
+after this is done, `gradec` should be available as a command.
+
 To run `gradec`, you will neeed to get a
 [GitHub personal access token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line)
 and export a **GRADEC_ACCESS_TOKEN** environment variable with the value of that
