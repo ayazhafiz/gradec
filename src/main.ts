@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 import chalk from 'chalk';
-import * as open from 'open';
 import * as readline from 'readline';
 import * as yargs from 'yargs';
 import * as api from './api';
-import * as cp from 'child_process';
 import {Grader} from './grader';
 
 enum GradecCommand {
@@ -24,7 +22,6 @@ interface GradecArgs {
     start: number,
     end: number,
   };
-  openIn: string|undefined;
   emojify: boolean;
 }
 
@@ -43,12 +40,6 @@ function getArgs() {
           .command('grade', 'perform assignment grading')
           .command('list', 'list assignment grade status')
           .options({
-            ao: {
-              alias: 'auto-open',
-              default: 'Safari',
-              describe: 'Automatically opens links in a browser',
-              type: 'string',
-            },
             c: {
               alias: 'commits',
               demandOption: true,
@@ -81,9 +72,6 @@ function getArgs() {
               '$0 grade -c commits.txt -t travis.txt -r 1 20',
               'grade lines 1-20 in `commits.txt\' and `travis.txt\'')
           .example(
-              '$0 -c c.txt -t t.txt -r 5 10 -ao "Google Chrome"',
-              'grade lines 5-10 in `c.txt\' and `t.txt\', auto-opening links in Google Chrome')
-          .example(
               '$0 list -c c.txt -t t.xt -r 5 10',
               'list grading status of lines 5-10 in `c.txt\' and `t.txt\'')
           .example(
@@ -94,7 +82,7 @@ function getArgs() {
           .wrap(yargs.terminalWidth())
           .argv;
 
-  const {ao, c: commits, t: tests, r: range, emojify, _: commands} = argv;
+  const {c: commits, t: tests, r: range, emojify, _: commands} = argv;
 
   const command = commands.length === 0 ?
       GradecCommand.grade :
@@ -106,7 +94,6 @@ function getArgs() {
     bounds: {start: start - 1, end: end - 1},
     command,
     files: {commits, tests},
-    openIn: ao,
     emojify,
   };
 
@@ -166,20 +153,7 @@ async function negativeResponse(
   return resp === to.naffirm;
 }
 
-async function maybeAutoOpen(
-    link: string, app: string|undefined): Promise<cp.ChildProcess|undefined> {
-  if (app) {
-    return open(link, {
-      app,
-      wait: false,
-    });
-  }
-  return;
-}
-
 async function grade(argv: GradecArgs): Promise<number> {
-  const {openIn} = argv;
-
   console.error(Message.Welcome);
   console.error(Message.CreateGrader);
 
@@ -204,7 +178,6 @@ async function grade(argv: GradecArgs): Promise<number> {
 
     console.error(Message.AssignmentPosition(position.at, position.total));
     console.error(Message.LinkToAssignment(commitUrl));
-    await maybeAutoOpen(commitUrl, openIn);
 
     if (await negativeResponse(Message.TypeWhenDone)) {
       break;
@@ -212,7 +185,6 @@ async function grade(argv: GradecArgs): Promise<number> {
 
     const gradeResult = await calculateAndPostGrade();
     console.error(Message.CalculatedGrade(gradeResult));
-    await maybeAutoOpen(gradeResult.url, openIn);
   }
   console.error(Message.Exit);
 
