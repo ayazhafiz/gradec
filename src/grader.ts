@@ -3,7 +3,7 @@ import * as rp from 'request-promise';
 import * as util from 'util';
 import * as api from './api';
 
-const MAXSCORE: number = Number(process.env.MAXSCORE || 100);
+const MAXSCORE = Number(process.env.MAXSCORE || 100);
 const RE_GH_COMMIT = /.*github.com\/(.*)\/commit\/(.*)/;
 const RE_SCORE_COMMENT = /^([+|-]\d+)(:.*)?/;
 const SCORE_PREFIX = 'Score:';
@@ -15,22 +15,18 @@ interface Submission {
   readonly url: string;
 }
 
-function getSubmissions(commitsFile: string, testsFile: string):
-    {commits: Submission[], tests: Submission[]} {
-  function split(file: string) {
-    return fs.readFileSync(file, 'utf8')
-        .split(/\r?\n/)
-        .filter((line) => line.length)  // discard empty lines
-        .map((line) => {
-          // A line in the file should look like
-          //   "<author> <url>"
-          const [author, url] = line.split(' ');
-          return {author, url};
-        });
-  }
-
-  return {commits: split(commitsFile), tests: split(testsFile)};
+function split(file: string): Submission[] {
+  return fs.readFileSync(file, 'utf8')
+      .split(/\r?\n/)
+      .filter((line) => line.length)  // discard empty lines
+      .map((line) => {
+        // A line in the file should look like
+        //   "<author> <url>"
+        const [author, url] = line.split(' ');
+        return {author, url};
+      });
 }
+
 
 function handleFailedRequest(err: api.CommitCommentsError): number {
   console.error(`Failed to process request\n${util.inspect(err.options)}`);
@@ -148,7 +144,7 @@ interface GradeHandle {
   /** URL of commit. */
   commitUrl: string;
   /** URL of posted comment specifying CI tests URL. */
-  testsCommentUrl: string;
+  testsCommentUrl?: string;
   /** Handle to perform actual scoring and posting of commit grade. */
   calculateAndPostGrade: () => Promise<api.CommentScoreResult>;
   /** Position of commit being graded, in terms of total number of commits. */
@@ -184,12 +180,13 @@ export class Grader implements GradeHandleIterator {
    */
   public static async makeGrader(
       commitsFile: string,
-      testsFile: string,
+      testsFile: string|undefined,
       bounds: {readonly start: number, readonly end: number},
       accessToken: string,
       emojify: boolean,
       ): Promise<{grader: Grader, errors: string[]}> {
-    const {commits, tests} = getSubmissions(commitsFile, testsFile);
+    const commits = split(commitsFile);
+    const tests = testsFile === undefined ? undefined : split(testsFile);
 
     const assignments: api.CommitMetadata[] = [];
     const errors: string[] = [];
@@ -207,7 +204,7 @@ export class Grader implements GradeHandleIterator {
         commit,
         commitUrl: commits[i].url,
         repo,
-        testsUrl: tests[i].url,
+        testsUrl: tests && tests[i].url,
       };
 
       assignments.push(meta);
@@ -251,16 +248,21 @@ export class Grader implements GradeHandleIterator {
     for (let i = 0; i < total; ++i) {
       const commit = this.assignments[i];
 
-      // Find the comment that points to the tests URL, if it has been posted
-      // before (this can happen when someone quits grading an assignment after
-      // it has been opened).
-      let testsComment =
-          (await getComments(this.token, commit))
-              .find((comment) => comment.body.startsWith(TESTS_PREFIX));
-      if (!testsComment) {
-        // Tests URL comment doesn't exist; post it.
-        testsComment = await postComment(
-            this.token, commit, `${TESTS_PREFIX} ${commit.testsUrl}`);
+      let testsCommentUrl;
+      if (commit.testsUrl !== undefined) {
+        // Find the comment that points to the tests URL, if it has been posted
+        // before (this can happen when someone quits grading an assignment
+        // after it has been opened).
+        let testsComment =
+            (await getComments(this.token, commit))
+                .find((comment) => comment.body.startsWith(TESTS_PREFIX));
+        if (!testsComment) {
+          // Tests URL comment doesn't exist; post it.
+          testsCommentUrl =
+              (await postComment(
+                   this.token, commit, `${TESTS_PREFIX} ${commit.testsUrl}`))
+                  .html_url;
+        }
       }
 
       const calculateAndPostGrade =
@@ -279,7 +281,7 @@ export class Grader implements GradeHandleIterator {
           at: i + 1,  // line number of assignment being graded (1-index)
           total,
         },
-        testsCommentUrl: testsComment.html_url,
+        testsCommentUrl,
       };
 
       yield handle;

@@ -28,5 +28,5 @@ export interface CommitMetadata {
   commit: string;
   repo: string;
   commitUrl: string;
-  testsUrl: string;
+  testsUrl?: string;
 }

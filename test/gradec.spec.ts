@@ -144,13 +144,13 @@ describe('gradec', async () => {
     await createGrader(0, 0);
     let firstUrl: string;
     for await (const handle of grader) {
-      firstUrl = handle.testsCommentUrl;
+      firstUrl = handle.testsCommentUrl!;
     }
 
     await createGrader(0, 0);
     let nextUrl: string;
     for await (const handle of grader) {
-      nextUrl = handle.testsCommentUrl;
+      nextUrl = handle.testsCommentUrl!;
     }
 
     expect(nextUrl!).toBe(firstUrl!);

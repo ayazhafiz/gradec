@@ -16,7 +16,7 @@ interface GradecArgs {
   command: GradecCommand;
   files: {
     commits: string,
-    tests: string,
+    tests?: string,
   };
   bounds: {
     start: number,
@@ -56,7 +56,7 @@ function getArgs() {
             },
             t: {
               alias: 'tests',
-              demandOption: true,
+              demandOption: false,
               describe: 'Links to CI builds corresponding to commits',
               requiresArg: true,
               type: 'string',
